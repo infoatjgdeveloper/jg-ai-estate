@@ -65,7 +65,11 @@ import {
   Map as MapIcon,
   LayoutGrid,
   ChevronDown,
-  Star
+  Star,
+  Users,
+  Briefcase,
+  HardHat,
+  X
 } from 'lucide-react';
 
 import { 
@@ -311,6 +315,61 @@ const NavDropdown = ({ label, badge, children }: { label: string, badge?: string
   </DropdownMenu>
 );
 
+// Location / market switcher — a searchable panel instead of a plain "🌍 Global ▾" text
+// dropdown, so picking a country feels like its own product surface (closer to how a real
+// SaaS market picker works) rather than an afterthought buried in the utility bar.
+const LocationSwitcher = ({ selectedCountry, onSelectCountry }: { selectedCountry: string, onSelectCountry: (name: string) => void }) => {
+  const [query, setQuery] = useState('');
+  const filtered = COUNTRIES.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
+  const current = selectedCountry === 'All' ? null : COUNTRIES.find(c => c.name === selectedCountry);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex items-center gap-1.5 hover:text-white/80 outline-none">
+        <MapPin className="w-3.5 h-3.5" />
+        {current ? `${current.flag} ${current.name}` : 'All Markets'}
+        <ChevronDown className="w-3.5 h-3.5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-72 bg-white border-stone-200 rounded-2xl p-0 shadow-2xl overflow-hidden" align="start">
+        <div className="p-3 border-b border-stone-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search a country..."
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-200 text-stone-900"
+            />
+          </div>
+        </div>
+        <div className="max-h-72 overflow-y-auto p-2">
+          <DropdownMenuItem
+            onClick={() => onSelectCountry('All')}
+            className={`rounded-xl cursor-pointer py-2.5 px-3 font-bold flex items-center justify-between ${selectedCountry === 'All' ? 'bg-brand-50 text-brand-700' : 'text-stone-700'}`}
+          >
+            <span>🌍 All Markets (Global)</span>
+            {selectedCountry === 'All' && <CheckCircle2 className="w-4 h-4" />}
+          </DropdownMenuItem>
+          {filtered.length === 0 && (
+            <p className="text-xs text-stone-400 text-center py-6">No markets match "{query}"</p>
+          )}
+          {filtered.map(c => (
+            <DropdownMenuItem
+              key={c.code}
+              onClick={() => onSelectCountry(c.name)}
+              className={`rounded-xl cursor-pointer py-2.5 px-3 font-medium flex items-center justify-between ${selectedCountry === c.name ? 'bg-brand-50 text-brand-700 font-bold' : 'text-stone-700'}`}
+            >
+              <span>{c.flag} {c.name}</span>
+              {selectedCountry === c.name && <CheckCircle2 className="w-4 h-4" />}
+            </DropdownMenuItem>
+          ))}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 interface NavbarProps {
   onProfileClick: () => void;
   onMarketplaceClick: () => void;
@@ -351,21 +410,7 @@ const Navbar = ({
       {/* Row 2: utility bar — location + login + post property */}
       <div className="w-full bg-gradient-to-r from-brand-700 via-brand-600 to-brand-600 text-white">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-2 flex items-center justify-between text-xs sm:text-sm font-bold">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 hover:text-white/80 outline-none">
-              {selectedCountry === 'All' ? '🌍 Global' : `${COUNTRIES.find(c => c.name === selectedCountry)?.flag || ''} ${selectedCountry}`}
-              <ChevronDown className="w-3.5 h-3.5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-white border-stone-200 rounded-xl p-2 shadow-2xl max-h-80 overflow-y-auto" align="start">
-              <DropdownMenuItem onClick={() => onSelectCountry('All')} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold text-stone-700">🌍 Global</DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-stone-100" />
-              {COUNTRIES.map(c => (
-                <DropdownMenuItem key={c.code} onClick={() => onSelectCountry(c.name)} className="rounded-lg cursor-pointer py-2.5 px-3 font-medium text-stone-700">
-                  {c.flag} {c.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <LocationSwitcher selectedCountry={selectedCountry} onSelectCountry={onSelectCountry} />
 
           <div className="flex items-center gap-3 sm:gap-5">
             {!user && <button onClick={signIn} className="hidden sm:inline hover:text-white/80">Login</button>}
@@ -1674,6 +1719,69 @@ const Dashboard = () => {
               <p className="text-3xl sm:text-4xl font-extrabold text-stone-900">+12.4%</p>
               <p className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">YTD growth, EU-weighted</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Who it's for — this is a SaaS platform for the whole real estate ecosystem, not
+          just buyers. One role picker, four tailored entry points into the same product. */}
+      <section className="bg-stone-900 py-16 sm:py-24 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <div className="max-w-2xl space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-400">One Platform, Every Role</p>
+            <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tighter">Built for everyone in real estate</h2>
+            <p className="text-sm sm:text-lg text-stone-400 font-medium leading-relaxed">
+              Whether you're buying your first home or managing a global portfolio, JG Estate gives you the tools built for your role.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              {
+                icon: UserIcon,
+                role: 'Customers',
+                copy: 'Browse, evaluate and buy or rent verified properties across 10 countries — with live pricing and no hidden fees.',
+                cta: 'Start Browsing',
+                onClick: () => { setBrowseMode('buy'); scrollToSection('catalog'); },
+              },
+              {
+                icon: Briefcase,
+                role: 'Real Estate Agents',
+                copy: 'List properties for free, reach global buyers, and manage every enquiry from one dashboard.',
+                cta: 'List a Property',
+                onClick: () => (user ? setIsLaunchOpen(true) : signIn()),
+              },
+              {
+                icon: HardHat,
+                role: 'Builders & Developers',
+                copy: 'Showcase entire projects, publish unit-level inventory, and track construction-stage sales in real time.',
+                cta: 'Showcase a Project',
+                onClick: () => (user ? setIsLaunchOpen(true) : signIn()),
+              },
+              {
+                icon: TrendingUp,
+                role: 'Investors',
+                copy: 'Track the global market index, compare city-level yields, and evaluate assets before you commit capital.',
+                cta: 'View Market Data',
+                onClick: () => scrollToSection('market'),
+              },
+            ].map((p) => (
+              <div key={p.role} className="group bg-stone-800/60 hover:bg-stone-800 border border-stone-700 hover:border-brand-500/50 rounded-[1.5rem] sm:rounded-[2rem] p-6 sm:p-8 flex flex-col justify-between gap-6 sm:gap-8 transition-all">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="bg-brand-500/10 w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
+                    <p.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-400" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">{p.role}</h3>
+                  <p className="text-xs sm:text-sm text-stone-400 leading-relaxed">{p.copy}</p>
+                </div>
+                <button
+                  onClick={p.onClick}
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-brand-400 group-hover:text-brand-300 transition-colors"
+                >
+                  {p.cta}
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </section>
