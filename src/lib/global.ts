@@ -1,13 +1,16 @@
 /**
  * Global multi-country marketplace layer.
  * Currency formatting, country/city reference data, simulated market indices,
- * and seed listings — EU-first with global (US, UK, UAE, India) coverage.
+ * and seed listings — global coverage across Europe, North America, Asia and
+ * the Middle East. USD is the common baseline (used for cross-market filtering
+ * and default fallbacks); every listing still displays in its own local currency,
+ * and that changes automatically as the user switches country/market.
  */
 
 // ---------- Currency ----------
 export const CURRENCY_META: Record<string, { symbol: string; locale: string; suffix?: boolean }> = {
-  EUR: { symbol: '€', locale: 'de-DE' },
   USD: { symbol: '$', locale: 'en-US' },
+  EUR: { symbol: '€', locale: 'de-DE' },
   GBP: { symbol: '£', locale: 'en-GB' },
   INR: { symbol: '₹', locale: 'en-IN' },
   AED: { symbol: 'AED ', locale: 'en-AE' },
@@ -21,9 +24,9 @@ const formatIndianWord = (price: number) => {
 };
 
 /** Universal price formatter: India uses Lakh/Cr, everyone else uses K/M with the local symbol. */
-export const formatPrice = (price: number, currency: string = 'EUR'): string => {
+export const formatPrice = (price: number, currency: string = 'USD'): string => {
   if (currency === 'INR') return formatIndianWord(price);
-  const meta = CURRENCY_META[currency] || CURRENCY_META.EUR;
+  const meta = CURRENCY_META[currency] || CURRENCY_META.USD;
   let value: string;
   if (price >= 1_000_000) value = `${(price / 1_000_000).toFixed(2).replace(/\.00$/, '')}M`;
   else if (price >= 1_000) value = `${(price / 1_000).toFixed(0)}K`;
@@ -31,12 +34,15 @@ export const formatPrice = (price: number, currency: string = 'EUR'): string => 
   return meta.suffix ? `${value} ${meta.symbol}` : `${meta.symbol}${value}`;
 };
 
-// Rough static FX rates to EUR — for cross-currency budget-range filtering only, not financial advice.
+// Rough static FX rates to USD — for cross-currency budget-range filtering only, not financial advice.
+export const FX_TO_USD: Record<string, number> = { USD: 1, EUR: 1.09, GBP: 1.27, PLN: 0.25, AED: 0.27, INR: 0.012 };
+export const toUSD = (price: number, currency: string = 'USD'): number => price * (FX_TO_USD[currency] ?? 1);
+// Legacy EUR-basis helpers, kept in case anything else still references them.
 export const FX_TO_EUR: Record<string, number> = { EUR: 1, USD: 0.92, GBP: 1.17, PLN: 0.23, AED: 0.25, INR: 0.0105 };
 export const toEUR = (price: number, currency: string = 'EUR'): number => price * (FX_TO_EUR[currency] ?? 1);
 
-export const formatPriceFull = (price: number, currency: string = 'EUR'): string => {
-  const meta = CURRENCY_META[currency] || CURRENCY_META.EUR;
+export const formatPriceFull = (price: number, currency: string = 'USD'): string => {
+  const meta = CURRENCY_META[currency] || CURRENCY_META.USD;
   const value = price.toLocaleString(meta.locale);
   return meta.suffix ? `${value} ${meta.symbol}` : `${meta.symbol}${value}`;
 };

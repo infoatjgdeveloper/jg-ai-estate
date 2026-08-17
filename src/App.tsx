@@ -103,7 +103,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { CURRENCY_META, formatPrice, formatPriceFull, toEUR, COUNTRIES, GLOBAL_SEED_PROJECTS, type Country } from '@/lib/global';
+import { CURRENCY_META, formatPrice, formatPriceFull, toUSD, COUNTRIES, GLOBAL_SEED_PROJECTS, type Country } from '@/lib/global';
 import MapView from '@/components/MapView';
 
 // --- Types ---
@@ -327,7 +327,7 @@ const LocationSwitcher = ({ selectedCountry, onSelectCountry }: { selectedCountr
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-1.5 hover:text-white/80 outline-none">
         <MapPin className="w-3.5 h-3.5" />
-        {current ? `${current.flag} ${current.name}` : 'All Markets'}
+        {current ? current.name : 'All Markets'}
         <ChevronDown className="w-3.5 h-3.5" />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72 bg-white border-stone-200 rounded-2xl p-0 shadow-2xl overflow-hidden" align="start">
@@ -348,7 +348,7 @@ const LocationSwitcher = ({ selectedCountry, onSelectCountry }: { selectedCountr
             onClick={() => onSelectCountry('All')}
             className={`rounded-xl cursor-pointer py-2.5 px-3 font-bold flex items-center justify-between ${selectedCountry === 'All' ? 'bg-brand-50 text-brand-700' : 'text-stone-700'}`}
           >
-            <span>🌍 All Markets (Global)</span>
+            <span className="flex items-center gap-2"><Globe className="w-4 h-4" /> All Markets (Global)</span>
             {selectedCountry === 'All' && <CheckCircle2 className="w-4 h-4" />}
           </DropdownMenuItem>
           {filtered.length === 0 && (
@@ -360,7 +360,7 @@ const LocationSwitcher = ({ selectedCountry, onSelectCountry }: { selectedCountr
               onClick={() => onSelectCountry(c.name)}
               className={`rounded-xl cursor-pointer py-2.5 px-3 font-medium flex items-center justify-between ${selectedCountry === c.name ? 'bg-brand-50 text-brand-700 font-bold' : 'text-stone-700'}`}
             >
-              <span>{c.flag} {c.name}</span>
+              <span>{c.name}</span>
               {selectedCountry === c.name && <CheckCircle2 className="w-4 h-4" />}
             </DropdownMenuItem>
           ))}
@@ -518,7 +518,7 @@ const Navbar = ({
 // Composite global index, rebased to 100, built from every tracked city's live series —
 // this is real derived data (not a static number) so it moves if COUNTRIES data changes.
 const MONTH_LABELS = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-const ALL_CITIES = COUNTRIES.flatMap(c => c.cities.map(city => ({ ...city, countryName: c.name, flag: c.flag })));
+const ALL_CITIES = COUNTRIES.flatMap(c => c.cities.map(city => ({ ...city, countryName: c.name })));
 const COMPOSITE_INDEX_DATA: MarketDataPoint[] = MONTH_LABELS.map((label, i) => {
   const avg = ALL_CITIES.reduce((sum, city) => {
     const base = city.series[0] || 1;
@@ -599,7 +599,7 @@ const MarketAnalytics = () => (
         {TOP_MOVERS.map((city) => (
           <div key={`${city.countryName}-${city.city}`} className="flex items-center justify-between py-2 border-b border-stone-100 last:border-0">
             <span className="text-xs font-bold text-stone-700 flex items-center gap-1.5">
-              <span>{city.flag}</span> {city.city}
+              {city.city}<span className="text-stone-400 font-medium">, {city.countryName}</span>
             </span>
             <span className={`text-xs font-bold flex items-center gap-1 ${city.yoyChange >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               {city.yoyChange >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
@@ -642,7 +642,7 @@ const ProjectCard: React.FC<{
           <div className="absolute top-4 left-4 sm:top-6 sm:left-6 right-4 sm:right-6 flex justify-between items-start gap-2">
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               <Badge className="bg-white/95 backdrop-blur-xl text-brand-600 border-none px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md">
-                {COUNTRIES.find(c => c.name === project.country)?.flag} {project.city}
+                {project.city}
               </Badge>
               {project.listingType === 'rent' && (
                 <Badge className="bg-emerald-600 text-white border-none px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md">
@@ -793,7 +793,7 @@ const ListingRow: React.FC<{
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge className="bg-stone-100 text-stone-600 border-none px-2.5 py-0.5 rounded-full text-[9px] font-bold">
-              {COUNTRIES.find(c => c.name === project.country)?.flag} {project.city}
+              {project.city}
             </Badge>
             {project.listingType === 'rent' && (
               <Badge className="bg-emerald-600 text-white border-none px-2.5 py-0.5 rounded-full text-[9px] font-bold">For Rent</Badge>
@@ -844,7 +844,7 @@ const MarketTrendBadge = ({ trend }: { trend?: 'Bullish' | 'Stable' | 'Bearish' 
   );
 };
 
-const UnitGrid = ({ units, onBook, currency = 'EUR' }: { units: Unit[], onBook: (u: Unit) => void, currency?: string }) => {
+const UnitGrid = ({ units, onBook, currency = 'USD' }: { units: Unit[], onBook: (u: Unit) => void, currency?: string }) => {
   const [activeUnit, setActiveUnit] = useState<Unit | null>(null);
 
   return (
@@ -1073,7 +1073,7 @@ const CountryIndexCard: React.FC<{ country: Country; onSelect: (name: string) =>
       <CardContent className="p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl">{country.flag}</span>
+            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-50 text-brand-700 text-[11px] font-extrabold tracking-wider">{country.code}</span>
             <div>
               <p className="text-sm font-bold text-stone-900">{country.name}</p>
               <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{country.cities.map(c => c.city).join(' · ')}</p>
@@ -1164,7 +1164,7 @@ const Dashboard = () => {
   
   // --- Zillow & 99acres style Filter Center states ---
   const [searchQuery, setSearchQuery] = useState("");
-  const [budgetRange, setBudgetRange] = useState<string>("All"); // EUR-equivalent tiers, works across all currencies
+  const [budgetRange, setBudgetRange] = useState<string>("All"); // USD-equivalent tiers, works across all currencies
   const [selectedConstStatus, setSelectedConstStatus] = useState<string>("All"); // "All", "Ready to Move", "Under Construction"
   const [selectedBhkType, setSelectedBhkType] = useState<string>("All"); // "All", "1 BR", "2 BR", "3 BR", "4 BR", "Penthouse"
   const [onlyReraVerified, setOnlyReraVerified] = useState<boolean>(false);
@@ -1176,7 +1176,7 @@ const Dashboard = () => {
   const [browseView, setBrowseView] = useState<'split' | 'grid'>('split');
   const [browseMode, setBrowseMode] = useState<'buy' | 'rent'>('buy');
   const [isEvaluateOpen, setIsEvaluateOpen] = useState(false);
-  const [evalForm, setEvalForm] = useState({ country: 'Germany', city: 'Berlin', area: '' });
+  const [evalForm, setEvalForm] = useState({ country: 'United States', city: 'New York', area: '' });
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Load and save favorite items
@@ -1206,8 +1206,8 @@ const Dashboard = () => {
     name: "",
     description: "",
     city: "",
-    country: "Germany",
-    currency: "EUR",
+    country: "United States",
+    currency: "USD",
     totalUnits: 50,
     basePrice: 500000,
     reraId: "",
@@ -1231,7 +1231,7 @@ const Dashboard = () => {
     }
   }, [profile]);
 
-  // --- Seed Data Function: seeds the global catalog (EU-first + US/UK/UAE/India) ---
+  // --- Seed Data Function: seeds the global catalog (Europe, North America, Asia, Middle East) ---
   const seedData = useCallback(async () => {
     const projectsSnap = await getDocs(collection(db, 'projects'));
     if (projectsSnap.empty) {
@@ -1494,8 +1494,8 @@ const Dashboard = () => {
         name: "",
         description: "",
         city: "",
-        country: "Germany",
-        currency: "EUR",
+        country: "United States",
+        currency: "USD",
         totalUnits: 50,
         basePrice: 500000,
         reraId: "",
@@ -1553,11 +1553,11 @@ const Dashboard = () => {
     }
 
     if (budgetRange !== 'All') {
-      const eurPrice = toEUR(p.basePrice, p.currency);
-      if (budgetRange === '< €300K' && eurPrice >= 300000) return false;
-      if (budgetRange === '€300K - €800K' && (eurPrice < 300000 || eurPrice > 800000)) return false;
-      if (budgetRange === '€800K - €2M' && (eurPrice < 800000 || eurPrice > 2000000)) return false;
-      if (budgetRange === '> €2M' && eurPrice <= 2000000) return false;
+      const usdPrice = toUSD(p.basePrice, p.currency);
+      if (budgetRange === '< $300K' && usdPrice >= 300000) return false;
+      if (budgetRange === '$300K - $800K' && (usdPrice < 300000 || usdPrice > 800000)) return false;
+      if (budgetRange === '$800K - $2M' && (usdPrice < 800000 || usdPrice > 2000000)) return false;
+      if (budgetRange === '> $2M' && usdPrice <= 2000000) return false;
     }
 
     if (selectedConstStatus !== 'All' && p.constructionStatus !== selectedConstStatus) return false;
@@ -1674,7 +1674,7 @@ const Dashboard = () => {
               verified.
             </h1>
             <p className="text-base sm:text-xl text-stone-600 max-w-lg font-medium leading-relaxed">
-              An EU-first global marketplace across Germany, France and Spain — plus the UK, US, UAE and India. ID-verified sellers, licensed payment processors, live market data.
+              A truly global marketplace across 10 countries — from the US and UK to Germany, the UAE and India. Priced in each market's local currency, ID-verified sellers, licensed payment processors, live market data.
             </p>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 pt-2">
               <Button
@@ -1814,7 +1814,7 @@ const Dashboard = () => {
                         : 'border-stone-200 text-stone-500 hover:bg-stone-50'
                     }`}
                   >
-                    🌍 Global
+                    Global
                   </button>
                   {COUNTRIES.map((c) => (
                     <button
@@ -1826,7 +1826,7 @@ const Dashboard = () => {
                           : 'border-stone-200 text-stone-500 hover:bg-stone-50'
                       }`}
                     >
-                      {c.flag} {c.name}
+                      {c.name}
                     </button>
                   ))}
                 </div>
@@ -1838,8 +1838,8 @@ const Dashboard = () => {
         <Tabs defaultValue="browse" className="space-y-12 md:space-y-20" id="catalog">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 md:gap-10">
             <div className="space-y-2 md:space-y-4">
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-stone-900 tracking-tighter">Asset Catalog</h2>
-              <p className="micro-label text-brand-600">Verified Global Real Estate Opportunities</p>
+              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-stone-900 tracking-tighter">Explore Properties</h2>
+              <p className="micro-label text-brand-600">Verified Listings Across {COUNTRIES.length} Countries</p>
             </div>
             <div className="w-full lg:w-auto overflow-x-auto scrollbar-none pb-2">
               <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-[2rem] border border-stone-200 flex w-max lg:w-auto">
@@ -1868,84 +1868,65 @@ const Dashboard = () => {
 
           <TabsContent value="browse" className="mt-0">
             {projects.length === 0 ? (
-              <div id="sandbox-seed-alert" className="text-center py-12 sm:py-24 bg-white border border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-12 max-w-2xl mx-auto space-y-6 shadow-xl">
+              <div id="sandbox-seed-alert" className="text-center py-12 sm:py-24 bg-white border border-stone-200 rounded-2xl sm:rounded-3xl p-6 sm:p-12 max-w-2xl mx-auto space-y-6 shadow-sm">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand-50 text-brand-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto">
                   <Building2 className="w-8 h-8 sm:w-10 sm:h-10" />
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-stone-900">Sandbox Database is Empty</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold text-stone-900">No Listings Yet</h3>
                 <p className="text-sm sm:text-base text-stone-500 font-medium leading-relaxed">
-                  Initialize this live global marketplace with verified sample properties across Berlin, Paris, Barcelona, Amsterdam, Lisbon, Warsaw, London, New York, Dubai and Mumbai to test all features instantly!
+                  Load sample properties from across our {COUNTRIES.length} markets to preview the marketplace.
                 </p>
                 {user ? (
-                  <Button 
+                  <Button
                     onClick={seedData}
-                    className="bg-brand-600 text-white hover:bg-stone-900 font-bold rounded-xl sm:rounded-2xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-lg shadow-brand-100 transition-all hover:scale-105"
+                    className="bg-brand-600 text-white hover:bg-stone-900 font-bold rounded-xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-sm transition-all"
                   >
-                    Instantly Seed Catalog
+                    Load Sample Listings
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     onClick={signIn}
-                    className="bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl sm:rounded-2xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-lg transition-all hover:scale-105"
+                    className="bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-sm transition-all"
                   >
-                    Authenticate to Seed Database
+                    Sign In to Get Started
                   </Button>
                 )}
               </div>
             ) : (
               <div className="space-y-6 sm:space-y-10">
-                {/* Buy / Rent / Sell / Evaluate / Invest mode switcher */}
-                <div className="flex flex-wrap gap-2 sm:gap-3">
-                  {[
-                    { key: 'buy', label: 'Buy' },
-                    { key: 'rent', label: 'Rent' },
-                    { key: 'sell', label: 'Sell' },
-                    { key: 'evaluate', label: 'Evaluate' },
-                    { key: 'invest', label: 'Invest' },
-                  ].map((mode) => {
-                    const isActive = (mode.key === 'buy' || mode.key === 'rent') && browseMode === mode.key;
-                    return (
-                      <button
-                        key={mode.key}
-                        onClick={() => {
-                          if (mode.key === 'buy' || mode.key === 'rent') {
-                            setBrowseMode(mode.key as 'buy' | 'rent');
-                          } else if (mode.key === 'sell') {
-                            user ? setIsLaunchOpen(true) : signIn();
-                          } else if (mode.key === 'evaluate') {
-                            setIsEvaluateOpen(true);
-                          } else if (mode.key === 'invest') {
-                            scrollToSection('market');
-                          }
-                        }}
-                        className={`px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all border ${
-                          isActive
-                            ? 'bg-brand-600 border-brand-600 text-white shadow-lg shadow-brand-100'
-                            : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
-                        }`}
-                      >
-                        {mode.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Search + filter bar — Buy/Rent toggle lives here now; Sell, Evaluate and
+                    Invest already have their own entry points in the nav and the role cards
+                    above, so they don't need to be repeated as a second row of buttons. */}
+                <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
+                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 sm:gap-4">
+                    {/* Buy / Rent segmented toggle */}
+                    <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
+                      {(['buy', 'rent'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => setBrowseMode(mode)}
+                          className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all capitalize ${
+                            browseMode === mode ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
 
-                {/* Zillow & 99acres style High-End Filter and Search Center */}
-                <div className="bg-white/95 border border-stone-200 shadow-xl rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 space-y-5 sm:space-y-6">
-                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 sm:gap-5">
                     {/* Search Term */}
                     <div className="relative flex-1">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-                      <Input 
+                      <Input
                         type="text"
                         placeholder="Search by city, country, project name or developer..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 bg-stone-50/50 border-stone-200 text-stone-900 rounded-xl sm:rounded-2xl h-12 sm:h-14 font-medium focus:border-brand-600 focus:bg-white transition-all text-sm"
+                        className="pl-12 bg-stone-50/50 border-stone-200 text-stone-900 rounded-xl h-12 sm:h-14 font-medium focus:border-brand-600 focus:bg-white transition-all text-sm"
                       />
                       {searchQuery && (
-                        <button 
-                          onClick={() => setSearchQuery("")} 
+                        <button
+                          onClick={() => setSearchQuery("")}
                           className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-600 uppercase"
                         >
                           Clear
@@ -1961,7 +1942,7 @@ const Dashboard = () => {
                         className={`h-12 sm:h-14 px-5 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 border-stone-200 hover:bg-stone-50 transition-all ${isFilterPanelExpanded ? 'bg-brand-50/50 border-brand-200 text-brand-600 shadow-sm' : 'text-stone-600'}`}
                       >
                         <SlidersHorizontal className="w-4 h-4" />
-                        <span>Filters Center</span>
+                        <span>Filters</span>
                         {(budgetRange !== "All" || selectedConstStatus !== "All" || selectedBhkType !== "All" || onlyReraVerified) && (
                           <span className="w-2.5 h-2.5 rounded-full bg-brand-600 animate-pulse" />
                         )}
@@ -1991,9 +1972,9 @@ const Dashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-5 border-t border-stone-100">
                       {/* Budget Ranges */}
                       <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Budget Range (€ equiv.)</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Budget Range (USD equiv.)</Label>
                         <div className="flex flex-wrap gap-1.5">
-                          {['All', '< €300K', '€300K - €800K', '€800K - €2M', '> €2M'].map((b) => (
+                          {['All', '< $300K', '$300K - $800K', '$800K - $2M', '> $2M'].map((b) => (
                             <button
                               key={b}
                               onClick={() => setBudgetRange(b)}
@@ -2178,8 +2159,8 @@ const Dashboard = () => {
                   <div className="bg-brand-100 p-5 sm:p-8 rounded-full mb-4 sm:mb-8 group-hover:bg-brand-600 group-hover:scale-110 transition-all">
                     <Plus className="w-8 sm:w-14 h-8 sm:h-14 text-brand-600 group-hover:text-white" />
                   </div>
-                  <CardTitle className="text-2xl sm:text-4xl font-bold text-stone-900">Launch Asset</CardTitle>
-                  <CardDescription className="micro-label mt-2 sm:micro-label mt-4 text-stone-500">Deploy new inventory</CardDescription>
+                  <CardTitle className="text-2xl sm:text-4xl font-bold text-stone-900">Add a Property</CardTitle>
+                  <CardDescription className="micro-label mt-2 sm:micro-label mt-4 text-stone-500">List a new project or unit</CardDescription>
                 </Card>
               </div>
             </div>
@@ -2247,7 +2228,7 @@ const Dashboard = () => {
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex flex-wrap gap-2">
                       <Badge className="bg-brand-600 text-white font-bold px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[11px] tracking-widest uppercase shadow-lg border-none">
-                        {COUNTRIES.find(c => c.name === selectedProject.country)?.flag} {selectedProject.country || selectedProject.region}
+                        {selectedProject.country || selectedProject.region}
                       </Badge>
                       {selectedProject.reraId ? (
                         <Badge className="bg-white/95 text-brand-650 border-none px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[11px] tracking-widest uppercase shadow-lg">
@@ -2630,7 +2611,7 @@ const Dashboard = () => {
           </DialogHeader>
           <div className="py-6 sm:py-10 space-y-6 sm:space-y-8">
             <div className="space-y-3 sm:space-y-4">
-              <Label htmlFor="resalePrice" className="text-stone-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest">Target Resale Price ({CURRENCY_META[selectedInvestment?.currency || 'EUR']?.symbol.trim() || selectedInvestment?.currency})</Label>
+              <Label htmlFor="resalePrice" className="text-stone-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest">Target Resale Price ({CURRENCY_META[selectedInvestment?.currency || 'USD']?.symbol.trim() || selectedInvestment?.currency})</Label>
               <Input 
                 id="resalePrice"
                 type="number"
@@ -2681,7 +2662,7 @@ const Dashboard = () => {
           </DialogHeader>
           <div className="py-6 sm:py-10 space-y-6 sm:space-y-8">
             <div className="space-y-3 sm:space-y-4">
-              <Label htmlFor="bid" className="text-stone-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest">Your Bid Amount ({CURRENCY_META[selectedUnit?.currency || 'EUR']?.symbol.trim() || selectedUnit?.currency})</Label>
+              <Label htmlFor="bid" className="text-stone-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest">Your Bid Amount ({CURRENCY_META[selectedUnit?.currency || 'USD']?.symbol.trim() || selectedUnit?.currency})</Label>
               <Input
                 id="bid"
                 type="number"
@@ -2738,11 +2719,11 @@ const Dashboard = () => {
                   value={newProject.country}
                   onChange={(e) => {
                     const c = COUNTRIES.find(c => c.name === e.target.value);
-                    setNewProject({ ...newProject, country: e.target.value, currency: c?.currency || 'EUR' });
+                    setNewProject({ ...newProject, country: e.target.value, currency: c?.currency || 'USD' });
                   }}
                   className="w-full rounded-xl border border-stone-100 bg-stone-50 font-bold text-sm px-4 py-2.5 h-10"
                 >
-                  {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.flag} {c.name}</option>)}
+                  {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2 sm:space-y-3">
@@ -2829,7 +2810,7 @@ const Dashboard = () => {
                 }}
                 className="w-full rounded-xl border border-stone-100 bg-stone-50 font-bold text-sm px-4 py-2.5 h-11"
               >
-                {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.flag} {c.name}</option>)}
+                {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
               </select>
             </div>
             <div className="space-y-2 sm:space-y-3">
@@ -3033,7 +3014,7 @@ const Dashboard = () => {
               <p className="text-xl font-extrabold text-stone-900">Estate</p>
             </div>
             <p className="text-sm text-stone-500 leading-relaxed max-w-xs">
-              A global, EU-first marketplace to buy, sell, and rent verified real estate — with live market data across {COUNTRIES.length} countries.
+              A global marketplace to buy, sell, and rent verified real estate — priced in local currency with live market data across {COUNTRIES.length} countries.
             </p>
             <a href={`tel:${AGENT_PHONE.replace(/\s/g, '')}`} className="text-sm font-bold text-stone-700 hover:text-brand-600 block">{AGENT_PHONE}</a>
           </div>
@@ -3075,7 +3056,7 @@ const Dashboard = () => {
                     onClick={() => { handleSelectCountryRoute(c.name); scrollToSection('catalog'); }}
                     className="text-sm font-bold text-stone-800 hover:text-brand-600 text-left"
                   >
-                    {c.flag} {c.name}
+                    {c.name}
                   </button>
                   <div className="flex flex-wrap gap-x-1.5 gap-y-1 text-xs text-stone-500">
                     {c.cities.map((city, idx) => (
@@ -3104,9 +3085,9 @@ const Dashboard = () => {
               © {new Date().getFullYear()} JG Estate. Listings shown are for demonstration. Payments are processed by licensed third-party providers — this platform does not hold client funds in escrow.
             </p>
             <div className="flex items-center gap-4 text-xs font-bold text-brand-300 uppercase tracking-widest">
-              <span>🌍 Global</span>
+              <span>Global Marketplace</span>
               <span className="text-white/20">·</span>
-              <span>EU-First</span>
+              <span>{COUNTRIES.length} Countries</span>
             </div>
           </div>
         </div>
