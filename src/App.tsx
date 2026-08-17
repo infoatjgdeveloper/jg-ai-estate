@@ -614,11 +614,13 @@ const MarketAnalytics = () => (
 );
 
 const ProjectCard: React.FC<{
-  project: Project, 
+  project: Project,
   onSelect: (p: Project) => void,
   isFavorite: boolean,
-  onToggleFavorite: (id: string, e: React.MouseEvent) => void
-}> = ({ project, onSelect, isFavorite, onToggleFavorite }) => {
+  onToggleFavorite: (id: string, e: React.MouseEvent) => void,
+  isComparing?: boolean,
+  onToggleCompare?: (id: string, e: React.MouseEvent) => void
+}> = ({ project, onSelect, isFavorite, onToggleFavorite, isComparing, onToggleCompare }) => {
   const bhks = project.bhkOptions ? project.bhkOptions.join(' & ') : '3 BR';
   const sizeRange = project.areaRange || '2,400 - 4,800 sq.ft.';
   const cStatus = project.constructionStatus || 'Ready to Move';
@@ -661,13 +663,27 @@ const ProjectCard: React.FC<{
               ) : null}
             </div>
             
-            <button
-              onClick={(e) => onToggleFavorite(project.id, e)}
-              className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/90 text-white hover:text-red-500 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-red-400"
-              aria-label={isFavorite ? "Remove from saved" : "Save property"}
-            >
-              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-            </button>
+            <div className="flex items-center gap-2">
+              {onToggleCompare && (
+                <button
+                  onClick={(e) => onToggleCompare(project.id, e)}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 backdrop-blur-md rounded-full flex items-center justify-center transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-brand-400 ${
+                    isComparing ? 'bg-brand-600 text-white' : 'bg-white/20 text-white hover:bg-white/90 hover:text-brand-600'
+                  }`}
+                  aria-label={isComparing ? "Remove from comparison" : "Add to comparison"}
+                  title={isComparing ? "Remove from comparison" : "Add to comparison"}
+                >
+                  <SlidersHorizontal className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                </button>
+              )}
+              <button
+                onClick={(e) => onToggleFavorite(project.id, e)}
+                className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/90 text-white hover:text-red-500 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-red-400"
+                aria-label={isFavorite ? "Remove from saved" : "Save property"}
+              >
+                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+              </button>
+            </div>
           </div>
 
           <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
@@ -1181,6 +1197,10 @@ const Dashboard = () => {
   const [isEmiOpen, setIsEmiOpen] = useState(false);
   const [emiForm, setEmiForm] = useState({ price: 500000, downPaymentPct: 20, rate: 6.5, years: 20, currency: 'USD' });
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [isAskAiOpen, setIsAskAiOpen] = useState(false);
+  const [askAiQuery, setAskAiQuery] = useState('');
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
 
   // Load and save favorite items
   useEffect(() => {
@@ -1200,9 +1220,19 @@ const Dashboard = () => {
 
   const handleToggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setFavorites(prev => 
+    setFavorites(prev =>
       prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
     );
+  };
+
+  // Property comparison — cap at 4, matching every major portal's compare tray.
+  const handleToggleCompare = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCompareIds(prev => {
+      if (prev.includes(id)) return prev.filter(cId => cId !== id);
+      if (prev.length >= 4) return prev;
+      return [...prev, id];
+    });
   };
 
   const [newProject, setNewProject] = useState({
@@ -1661,40 +1691,66 @@ const Dashboard = () => {
         onAdvisorClick={() => openWhatsApp("Hi! I'd like to speak with a JG Estate advisor about buying, selling, or renting a property.")}
         onEmiClick={() => setIsEmiOpen(true)}
       />
-      {/* Hero — search-first, product-forward. Replaces the old editorial photo-collage
-          layout: the primary action is a real search bar, not a scroll cue. */}
-      <section className="relative pt-32 sm:pt-44 pb-16 sm:pb-24 px-4 sm:px-8 overflow-hidden bg-gradient-to-b from-brand-50/70 via-white to-white border-b border-stone-200">
-        <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-100/50 via-transparent to-transparent pointer-events-none" />
+      {/* Hero — full-bleed real-estate photography instead of the old flat white/gradient
+          panel, closer to how SquareYards/99acres open (a dramatic property photo, not a
+          blank canvas) while keeping the search bar as the primary action, not a scroll cue. */}
+      <section className="relative pt-40 sm:pt-56 pb-20 sm:pb-32 px-4 sm:px-8 overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=80"
+            alt=""
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/85 via-stone-950/70 to-stone-950" />
+        </div>
         <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8 relative z-10">
-          <Badge className="bg-white text-brand-600 border-brand-200 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit mx-auto shadow-sm">
-            <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
-            Live Across {COUNTRIES.length} Countries
-          </Badge>
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-stone-900 tracking-tighter leading-[1.03]">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit">
+              <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
+              Live Across {COUNTRIES.length} Countries
+            </Badge>
+            <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 text-amber-400 fill-amber-400" />
+              4.8 Rated · 2,300+ Closed Deals
+            </Badge>
+          </div>
+          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-semibold text-white tracking-tight leading-[1.05]">
             Buy, rent or sell property
             <br className="hidden sm:block" />
-            <span className="text-brand-600">anywhere in the world.</span>
+            <span className="text-brand-300">anywhere in the world.</span>
           </h1>
-          <p className="text-base sm:text-xl text-stone-600 max-w-2xl mx-auto font-medium leading-relaxed">
+          <p className="text-base sm:text-xl text-white/75 max-w-2xl mx-auto font-medium leading-relaxed">
             Verified listings, live market data and licensed payment processing — priced in local currency, wherever you're buying.
           </p>
 
           {/* Primary action: search, not scroll */}
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xl shadow-stone-200/50 p-3 sm:p-4 max-w-2xl mx-auto">
+            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl overflow-x-auto no-scrollbar mb-2 sm:mb-3">
+              {([
+                { key: 'buy', label: 'Buy' },
+                { key: 'rent', label: 'Rent' },
+                { key: 'commercial', label: 'Commercial' },
+                { key: 'plots', label: 'Plots/Land' },
+              ] as const).map((mode) => (
+                <button
+                  key={mode.key}
+                  onClick={() => {
+                    if (mode.key === 'buy' || mode.key === 'rent') {
+                      setBrowseMode(mode.key);
+                    } else {
+                      openWhatsApp(`Hi! I'm looking for ${mode.label.toLowerCase()} listings on JG Estate — can you help me get started?`);
+                    }
+                  }}
+                  className={`px-4 sm:px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                    browseMode === mode.key ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
             <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
-              <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
-                {(['buy', 'rent'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setBrowseMode(mode)}
-                    className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold capitalize transition-all ${
-                      browseMode === mode ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
                 <input
@@ -1706,6 +1762,14 @@ const Dashboard = () => {
                 />
               </div>
               <Button
+                onClick={() => setIsAskAiOpen(true)}
+                variant="outline"
+                className="border-stone-200 text-stone-600 hover:text-brand-600 hover:border-brand-200 font-bold rounded-xl px-4 sm:px-5 py-3 sm:py-3.5 text-sm shrink-0"
+              >
+                <Sparkles className="w-4 h-4 mr-1.5 text-brand-500" />
+                Ask AI
+              </Button>
+              <Button
                 onClick={() => scrollToSection('catalog')}
                 className="bg-brand-600 text-white hover:bg-stone-900 font-bold rounded-xl px-6 sm:px-8 py-3 sm:py-3.5 text-sm shadow-sm transition-all"
               >
@@ -1714,10 +1778,25 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-400">
-            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-brand-600" /> ID-Verified Sellers</span>
-            <span className="flex items-center gap-1.5"><Landmark className="w-3.5 h-3.5 text-brand-600" /> Licensed Payment Processors</span>
-            <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-brand-600" /> Live Market Data</span>
+          {/* Trending cities — quick-select chips, like the "hot markets" pattern on
+              every major portal. Pulls from the same YoY data driving the market index. */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-white/50 mr-1">Trending:</span>
+            {TOP_MOVERS.slice(0, 5).map((city) => (
+              <button
+                key={city.city}
+                onClick={() => { setSearchQuery(city.city); setBrowseMode('buy'); scrollToSection('catalog'); }}
+                className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-white/90 hover:border-brand-300 hover:text-white transition-all"
+              >
+                {city.city} <span className="text-brand-300 font-bold">+{city.yoyChange}%</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-white/50">
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-brand-300" /> ID-Verified Sellers</span>
+            <span className="flex items-center gap-1.5"><Landmark className="w-3.5 h-3.5 text-brand-300" /> Licensed Payment Processors</span>
+            <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-brand-300" /> Live Market Data</span>
           </div>
         </div>
       </section>
@@ -1808,7 +1887,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
           <div className="max-w-2xl space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">How It Works</p>
-            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">From search to keys, in three steps</h2>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">From search to keys, in three steps</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
             {[
@@ -1831,13 +1910,41 @@ const Dashboard = () => {
         </div>
       </section>
 
+      {/* Why choose JG Estate — trust/differentiation reasons, distinct from the
+          process-step "How It Works" above. Cross-border services a global buyer
+          actually needs, not just search. */}
+      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white border-b border-stone-200">
+        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <div className="max-w-2xl space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-600">Why JG Estate</p>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Built for cross-border buyers, not just browsers</h2>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { icon: Coins, title: 'Zero Buyer Fees', copy: 'Browsing, saved searches and agent contact are always free — no paywalled listings.' },
+              { icon: FileText, title: 'Legal & Documentation', copy: 'Cross-border ownership rules, title checks and contract review, coordinated for you.' },
+              { icon: Landmark, title: 'Escrow-Backed Payments', copy: 'Funds route through licensed processors in each market — never held by this platform.' },
+              { icon: Clock, title: '24/7 Advisor Support', copy: 'WhatsApp a real advisor any time, in any of our 10 markets, no ticket queues.' },
+            ].map((item) => (
+              <div key={item.title} className="text-center sm:text-left space-y-3">
+                <div className="bg-brand-50 w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mx-auto sm:mx-0">
+                  <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600" />
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-stone-900">{item.title}</h3>
+                <p className="text-xs sm:text-sm text-stone-500 leading-relaxed">{item.copy}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing — the SaaS layer: buyers and renters always browse free, this is what
           agents and builders pay for as they outgrow the free tier. */}
       <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
           <div className="max-w-2xl mx-auto text-center space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">Plans for Agents & Builders</p>
-            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">List for free. Scale when you're ready.</h2>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">List for free. Scale when you're ready.</h2>
             <p className="text-sm sm:text-base text-stone-500 font-medium">Buyers and renters always browse for free. These plans are for the professionals listing property.</p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
@@ -1884,7 +1991,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
           <div className="max-w-2xl space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">What People Are Saying</p>
-            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">Trusted by buyers, agents and investors</h2>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Trusted by buyers, agents and investors</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
@@ -1914,7 +2021,7 @@ const Dashboard = () => {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="max-w-2xl space-y-3 sm:space-y-4">
               <p className="micro-label text-brand-600">Property News & Guides</p>
-              <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">Stay ahead of the market</h2>
+              <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Stay ahead of the market</h2>
             </div>
             <button
               onClick={() => openWhatsApp("Hi! I'd like to get real estate market updates and buying guides from JG Estate.")}
@@ -1975,7 +2082,7 @@ const Dashboard = () => {
         <div className="max-w-4xl mx-auto space-y-10 sm:space-y-14">
           <div className="text-center space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">Questions</p>
-            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">Frequently asked</h2>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Frequently asked</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
             {[
@@ -2298,6 +2405,8 @@ const Dashboard = () => {
                           onSelect={handleSelectProject}
                           isFavorite={favorites.includes(project.id)}
                           onToggleFavorite={handleToggleFavorite}
+                          isComparing={compareIds.includes(project.id)}
+                          onToggleCompare={handleToggleCompare}
                         />
                       ))}
                   </div>
@@ -3189,6 +3298,58 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Ask AI — natural-language search assist. Routes the query to an advisor via
+          WhatsApp rather than a black-box match, since there's no live LLM search
+          backend yet — this keeps the promise honest while still being useful. */}
+      <Dialog open={isAskAiOpen} onOpenChange={setIsAskAiOpen}>
+        <DialogContent
+          onClose={() => setIsAskAiOpen(false)}
+          className="sm:max-w-lg bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
+        >
+          <DialogHeader className="space-y-2 sm:space-y-4">
+            <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2.5">
+              <Sparkles className="w-6 h-6 text-brand-500" />
+              Ask AI
+            </DialogTitle>
+            <DialogDescription className="text-stone-500 text-sm sm:text-base font-medium">
+              Describe what you're looking for in plain language — budget, city, must-haves — and an advisor will follow up with matches.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 sm:py-8 space-y-4">
+            <textarea
+              value={askAiQuery}
+              onChange={(e) => setAskAiQuery(e.target.value)}
+              placeholder="e.g. 3-bedroom apartment near the coast in Lisbon, under €600K, ready to move in"
+              rows={4}
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:bg-white text-sm font-medium text-stone-900 p-4 resize-none"
+            />
+            <div className="flex flex-wrap gap-2">
+              {['Under $500K', 'Sea view', 'Move-in ready', 'High rental yield'].map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => setAskAiQuery((q) => (q ? `${q}, ${chip.toLowerCase()}` : chip))}
+                  className="px-3 py-1.5 rounded-full bg-stone-100 text-xs font-semibold text-stone-600 hover:bg-brand-50 hover:text-brand-600 transition-all"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button
+            disabled={!askAiQuery.trim()}
+            onClick={() => {
+              openWhatsApp(`Hi! I used Ask AI on JG Estate. Here's what I'm looking for: ${askAiQuery}`);
+              setIsAskAiOpen(false);
+              setAskAiQuery('');
+            }}
+            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] disabled:opacity-40 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
+          >
+            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            Get Matches From an Advisor
+          </Button>
+        </DialogContent>
+      </Dialog>
+
       {/* Profile Dialog */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent 
@@ -3405,6 +3566,108 @@ const Dashboard = () => {
           </div>
         </div>
       </footer>
+
+      {/* Floating compare tray — appears once 1+ properties are selected via the
+          compare toggle on each card. Standard pattern on every major property
+          portal; JG Estate had no equivalent before this. */}
+      {compareIds.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-[55] bg-white border-t border-stone-200 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
+              {compareIds.map((id) => {
+                const p = projects.find(pr => pr.id === id);
+                if (!p) return null;
+                return (
+                  <div key={id} className="flex items-center gap-1.5 bg-stone-100 rounded-full pl-1 pr-2 py-1 shrink-0">
+                    <img src={p.imageUrl} alt={p.name} className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+                    <span className="text-xs font-bold text-stone-700 max-w-[100px] truncate">{p.name}</span>
+                    <button onClick={(e) => handleToggleCompare(id, e)} className="text-stone-400 hover:text-stone-700">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <button onClick={() => setCompareIds([])} className="text-xs font-bold text-stone-400 hover:text-stone-600 hidden sm:block">
+                Clear
+              </button>
+              <Button
+                disabled={compareIds.length < 2}
+                onClick={() => setIsCompareOpen(true)}
+                className="bg-brand-600 text-white hover:bg-stone-900 disabled:opacity-40 font-bold rounded-xl px-4 sm:px-6 py-2.5 text-xs sm:text-sm shadow-sm"
+              >
+                Compare {compareIds.length > 0 ? `(${compareIds.length})` : ''}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comparison dialog — side-by-side spec table for the selected properties. */}
+      <Dialog open={isCompareOpen} onOpenChange={setIsCompareOpen}>
+        <DialogContent
+          onClose={() => setIsCompareOpen(false)}
+          className="sm:max-w-4xl bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl max-h-[85vh] overflow-y-auto"
+        >
+          <DialogHeader className="space-y-2 sm:space-y-4">
+            <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">Compare Properties</DialogTitle>
+            <DialogDescription className="text-stone-500 text-sm sm:text-base font-medium">
+              Side-by-side view of the {compareIds.length} properties you selected.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-x-auto py-4 sm:py-6">
+            <table className="w-full border-collapse min-w-[600px]">
+              <thead>
+                <tr>
+                  <td className="w-32" />
+                  {compareIds.map((id) => {
+                    const p = projects.find(pr => pr.id === id);
+                    if (!p) return null;
+                    return (
+                      <th key={id} className="text-left p-3 align-top">
+                        <img src={p.imageUrl} alt={p.name} className="w-full aspect-[4/3] object-cover rounded-xl mb-2" referrerPolicy="no-referrer" />
+                        <p className="font-bold text-stone-900 text-sm leading-tight">{p.name}</p>
+                        <p className="text-xs text-stone-500 mt-0.5">{p.city}</p>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {[
+                  { label: 'Price', get: (p: Project) => priceLabel(p.basePrice, p.currency, p.listingType) },
+                  { label: 'Configuration', get: (p: Project) => p.bhkOptions ? p.bhkOptions.join(' & ') : '3 BR' },
+                  { label: 'Area', get: (p: Project) => p.areaRange || '2,400 - 4,800 sq.ft.' },
+                  { label: 'Status', get: (p: Project) => p.constructionStatus || 'Ready to Move' },
+                  { label: 'Developer', get: (p: Project) => p.developerName || '—' },
+                  { label: 'Verification', get: (p: Project) => p.reraId ? 'RERA Verified' : p.verified ? 'Verified' : 'Unverified' },
+                  { label: 'AI Quality Score', get: (p: Project) => `${p.aiScore || 85}/100` },
+                ].map((row) => (
+                  <tr key={row.label} className="border-t border-stone-100">
+                    <td className="p-3 text-xs font-bold uppercase tracking-wider text-stone-400 align-top">{row.label}</td>
+                    {compareIds.map((id) => {
+                      const p = projects.find(pr => pr.id === id);
+                      if (!p) return <td key={id} className="p-3" />;
+                      return <td key={id} className="p-3 font-semibold text-stone-800 align-top">{row.get(p)}</td>;
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Button
+            onClick={() => {
+              const names = compareIds.map(id => projects.find(p => p.id === id)?.name).filter(Boolean).join(', ');
+              openWhatsApp(`Hi! I'm comparing these properties on JG Estate: ${names}. Can an advisor help me decide?`);
+            }}
+            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
+          >
+            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            Ask an Advisor to Help Me Decide
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

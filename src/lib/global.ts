@@ -249,7 +249,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Eixample Terraza', description: 'Modernist-block apartments in the Eixample grid, private terrace, steps from Sagrada Família.',
     location: 'Eixample, Barcelona', city: 'Barcelona', country: 'Spain', countryCode: 'ES', currency: 'EUR', region: 'Europe',
-    totalUnits: 48, basePrice: 495000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Costa Urban Homes',
+    totalUnits: 48, basePrice: 495000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Costa Urban Homes',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '72 - 130 m²',
     constructionStatus: 'Under Construction', rentalYield: 4.8, aiScore: 91,
     amenities: ['Private Terrace', 'Rooftop Pool', 'Solar Panels', 'Communal Garden'],
@@ -258,7 +258,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Salamanca Prime', description: 'Prime-district Madrid residences with polished stone lobbies and 24-hour concierge, near Retiro Park.',
     location: 'Salamanca, Madrid', city: 'Madrid', country: 'Spain', countryCode: 'ES', currency: 'EUR', region: 'Europe',
-    totalUnits: 36, basePrice: 720000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Madrid Capital Homes',
+    totalUnits: 36, basePrice: 720000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Madrid Capital Homes',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['3 BR', '4 BR'], areaRange: '110 - 180 m²',
     constructionStatus: 'Ready to Move', rentalYield: 4.1, aiScore: 92,
     amenities: ['24h Concierge', 'Marble Lobby', 'Retiro Park Views', 'Private Gym'],
@@ -267,7 +267,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Canal Zicht Residences', description: 'Canal-front new-build in Amsterdam Noord with sustainable timber construction and roof terraces.',
     location: 'Amsterdam Noord', city: 'Amsterdam', country: 'Netherlands', countryCode: 'NL', currency: 'EUR', region: 'Europe',
-    totalUnits: 52, basePrice: 645000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'NoordWonen Development',
+    totalUnits: 52, basePrice: 645000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'NoordWonen Development',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '70 - 120 m²',
     constructionStatus: 'Pre-Launch', rentalYield: 3.9, aiScore: 89,
     amenities: ['Canal Views', 'Timber Sustainable Build', 'Roof Terrace', 'EV Charging'],
@@ -276,7 +276,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Navigli Atelier', description: 'Design-forward residences along the Navigli canals, close to Milan\'s fashion and design district.',
     location: 'Navigli, Milan', city: 'Milan', country: 'Italy', countryCode: 'IT', currency: 'EUR', region: 'Europe',
-    totalUnits: 28, basePrice: 560000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Milano Design Homes',
+    totalUnits: 28, basePrice: 560000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Milano Design Homes',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '55 - 95 m²',
     constructionStatus: 'Ready to Move', rentalYield: 4.0, aiScore: 87,
     amenities: ['Canal-side Terrace', 'Designer Fit-out', 'Concierge'],
@@ -285,7 +285,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Tejo Vista Residences', description: 'Riverfront Lisbon apartments with panoramic Tejo views, growing golden-visa demand district.',
     location: 'Parque das Nações, Lisbon', city: 'Lisbon', country: 'Portugal', countryCode: 'PT', currency: 'EUR', region: 'Europe',
-    totalUnits: 60, basePrice: 415000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Tejo Capital Real Estate',
+    totalUnits: 60, basePrice: 415000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Tejo Capital Real Estate',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '75 - 125 m²',
     constructionStatus: 'Under Construction', rentalYield: 5.1, aiScore: 90,
     amenities: ['River Views', 'Rooftop Pool', 'Co-working Lounge', 'EV Charging'],
@@ -294,7 +294,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Wisła Bulwary', description: 'Riverside Warsaw development on the Wisła boulevards, fast-growing district with strong rental demand.',
     location: 'Powiśle, Warsaw', city: 'Warsaw', country: 'Poland', countryCode: 'PL', currency: 'PLN', region: 'Europe',
-    totalUnits: 70, basePrice: 2350000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Wisła Development Group',
+    totalUnits: 70, basePrice: 2350000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Wisła Development Group',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '58 - 98 m²',
     constructionStatus: 'Under Construction', rentalYield: 5.6, aiScore: 88,
     amenities: ['River Boulevard Access', 'Underground Parking', 'Playground', 'Bike Storage'],
@@ -303,7 +303,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Riverside Wharf Collection', description: 'South Bank riverside development with panoramic Thames views, part of a major regeneration zone.',
     location: 'Nine Elms, London', city: 'London', country: 'United Kingdom', countryCode: 'GB', currency: 'GBP', region: 'Europe',
-    totalUnits: 90, basePrice: 780000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Thames Regeneration Partners',
+    totalUnits: 90, basePrice: 780000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Thames Regeneration Partners',
     verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '520 - 1,150 sqft',
     constructionStatus: 'Under Construction', rentalYield: 4.4, aiScore: 89,
     amenities: ['Thames Views', 'Concierge', 'Residents Gym', 'Private Cinema Room'],
@@ -312,7 +312,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Hudson Yards Sky Collection', description: 'Full-floor residences above the High Line with skyline views and 5-star hotel-style amenities.',
     location: 'Hudson Yards, New York', city: 'New York', country: 'United States', countryCode: 'US', currency: 'USD', region: 'North America',
-    totalUnits: 54, basePrice: 2450000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Related Skyline Partners',
+    totalUnits: 54, basePrice: 2450000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Related Skyline Partners',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR', 'Penthouse'], areaRange: '1,100 - 3,400 sqft',
     constructionStatus: 'Ready to Move', rentalYield: 3.4, aiScore: 95,
     amenities: ['High Line Access', 'Private Cinema', '75ft Pool', 'Wellness Spa'],
@@ -321,7 +321,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Brickell Bayview Towers', description: 'Waterfront Miami tower with resort-style amenities and direct Biscayne Bay views.',
     location: 'Brickell, Miami', city: 'Miami', country: 'United States', countryCode: 'US', currency: 'USD', region: 'North America',
-    totalUnits: 120, basePrice: 890000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Bayview Development Corp',
+    totalUnits: 120, basePrice: 890000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Bayview Development Corp',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '1,050 - 2,200 sqft',
     constructionStatus: 'Under Construction', rentalYield: 4.9, aiScore: 90,
     amenities: ['Bay Views', 'Marina Access', 'Infinity Pool', 'Valet Parking'],
@@ -330,7 +330,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Palm Jumeirah Vista', description: 'Beachfront branded residences on the Palm with private beach access and skyline views of the Dubai coastline.',
     location: 'Palm Jumeirah, Dubai', city: 'Dubai', country: 'UAE', countryCode: 'AE', currency: 'AED', region: 'Middle East',
-    totalUnits: 80, basePrice: 3200000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Palm Coastal Developers',
+    totalUnits: 80, basePrice: 3200000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Palm Coastal Developers',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR', 'Penthouse'], areaRange: '1,400 - 4,800 sqft',
     constructionStatus: 'Under Construction', rentalYield: 6.8, aiScore: 94,
     amenities: ['Private Beach', 'Infinity Pool', 'Concierge', 'Valet & Security'],
@@ -339,7 +339,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Lodha World Towers', description: 'Iconic luxury residences in the heart of Mumbai with world-class amenities and Arabian Sea views.',
     location: 'Lower Parel, Mumbai', city: 'Mumbai', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
-    totalUnits: 120, basePrice: 45000000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Lodha Group',
+    totalUnits: 120, basePrice: 45000000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Lodha Group',
     reraId: 'P51900008345', verified: true, marketTrend: 'Bullish', bhkOptions: ['3 BR', '4 BR', 'Penthouse'], areaRange: '2,400 - 5,200 sqft',
     constructionStatus: 'Ready to Move', rentalYield: 4.8, aiScore: 94,
     amenities: ['Spa & Wellness Center', 'Arabian Sea View Deck', 'Private Elevators'],

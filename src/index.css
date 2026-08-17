@@ -1,47 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Full creative reset (per explicit request): deep forest green + warm bronze
+   in place of the old blue/white palette, and an editorial serif/sans pairing
+   in place of the old single-typeface look. Every brand-* / stone-* utility
+   used across the app inherits from these tokens, so this one file recolors
+   and retypesets the entire site without touching component markup. */
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
   --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
 
-  --color-brand-primary: #1E5FE0;
-  --color-brand-secondary: #123577;
-  --color-brand-accent: #60A5FA;
-  --color-paper: #FFFFFF;
-  --color-ink: #0F172A;
+  --color-brand-primary: #0B6E4F;
+  --color-brand-secondary: #073B2B;
+  --color-brand-accent: #C9A15A;
+  --color-paper: #FFFCF7;
+  --color-ink: #16211C;
 
-  /* Blue accent scale — clean blue/white theme */
-  --color-brand-50: #EFF6FF;
-  --color-brand-100: #DBEAFE;
-  --color-brand-150: #CBE0FD;
-  --color-brand-200: #BFDBFE;
-  --color-brand-300: #93C5FD;
-  --color-brand-400: #5B9BF7;
-  --color-brand-500: #3B7DF0;
-  --color-brand-600: #1E5FE0;
-  --color-brand-650: #1B54C7;
-  --color-brand-700: #1847A8;
-  --color-brand-800: #123577;
-  --color-brand-900: #0D2757;
-  --color-brand-950: #081833;
+  /* Deep forest green + bronze accent scale — replaces the old blue theme */
+  --color-brand-50: #ECF7F1;
+  --color-brand-100: #D2ECDE;
+  --color-brand-150: #B9E1CB;
+  --color-brand-200: #9FD6B8;
+  --color-brand-300: #6CBF93;
+  --color-brand-400: #39A76E;
+  --color-brand-500: #16874F;
+  --color-brand-600: #0B6E4F;
+  --color-brand-650: #0A6047;
+  --color-brand-700: #0A4F3C;
+  --color-brand-800: #0A3D30;
+  --color-brand-900: #082D25;
+  --color-brand-950: #051D18;
 
-  /* Cool neutral scale — crisp gray, not warm/beige */
-  --color-stone-50: #F8FAFC;
-  --color-stone-100: #F1F5F9;
-  --color-stone-150: #E9EEF4;
-  --color-stone-200: #E2E8F0;
-  --color-stone-300: #CBD5E1;
-  --color-stone-400: #94A3B8;
-  --color-stone-500: #64748B;
-  --color-stone-600: #475569;
-  --color-stone-700: #334155;
-  --color-stone-800: #1E293B;
-  --color-stone-900: #0F172A;
-  --color-stone-950: #0B1220;
+  /* Warm stone scale — replaces the old cool slate/blue-gray neutrals */
+  --color-stone-50: #FAF9F6;
+  --color-stone-100: #F3F1EB;
+  --color-stone-150: #EBE7DE;
+  --color-stone-200: #E1DBCE;
+  --color-stone-300: #CBC2AC;
+  --color-stone-400: #A79C82;
+  --color-stone-500: #7D7360;
+  --color-stone-600: #5B5346;
+  --color-stone-700: #423C33;
+  --color-stone-800: #2B2721;
+  --color-stone-900: #1A1714;
+  --color-stone-950: #0F0D0B;
 }
 
 @theme inline {
@@ -70,25 +75,25 @@
 }
 
 :root {
-    --background: #F8FAFC;
-    --foreground: #0F172A;
-    --card: #FFFFFF;
-    --card-foreground: #0F172A;
-    --popover: #FFFFFF;
-    --popover-foreground: #0F172A;
-    --primary: #1E5FE0;
+    --background: #FAF9F6;
+    --foreground: #1A1714;
+    --card: #FFFCF7;
+    --card-foreground: #1A1714;
+    --popover: #FFFCF7;
+    --popover-foreground: #1A1714;
+    --primary: #0B6E4F;
     --primary-foreground: #FFFFFF;
-    --secondary: #F1F5F9;
-    --secondary-foreground: #0F172A;
-    --muted: #F1F5F9;
-    --muted-foreground: #64748B;
-    --accent: #F1F5F9;
-    --accent-foreground: #0F172A;
-    --destructive: #DC2626;
+    --secondary: #F3F1EB;
+    --secondary-foreground: #1A1714;
+    --muted: #F3F1EB;
+    --muted-foreground: #7D7360;
+    --accent: #F3F1EB;
+    --accent-foreground: #1A1714;
+    --destructive: #B3311F;
     --destructive-foreground: #FFFFFF;
-    --border: #E2E8F0;
-    --input: #E2E8F0;
-    --ring: #1E5FE0;
+    --border: #E1DBCE;
+    --input: #E1DBCE;
+    --ring: #0B6E4F;
     --radius: 0.75rem;
 }
 
