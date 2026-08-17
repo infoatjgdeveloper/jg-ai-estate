@@ -381,11 +381,12 @@ interface NavbarProps {
   onEvaluateClick: () => void;
   onInvestClick: () => void;
   onAdvisorClick: () => void;
+  onEmiClick: () => void;
 }
 
 const Navbar = ({
   onProfileClick, onMarketplaceClick, selectedCountry, onSelectCountry,
-  onBuyClick, onRentClick, onSellClick, onEvaluateClick, onInvestClick, onAdvisorClick,
+  onBuyClick, onRentClick, onSellClick, onEvaluateClick, onInvestClick, onAdvisorClick, onEmiClick,
 }: NavbarProps) => {
   const { user, profile, signIn, signOut } = useAuth();
 
@@ -449,8 +450,8 @@ const Navbar = ({
                 <DropdownMenuItem onClick={onMarketplaceClick} className="rounded-lg cursor-pointer py-2.5 px-3">Track Your Listings</DropdownMenuItem>
               </NavDropdown>
               <NavDropdown label="Home Loans">
-                <div className="px-3 py-2.5 text-xs text-stone-500 leading-relaxed">Financing partners coming soon. Ask your advisor for referrals in the meantime.</div>
-                <DropdownMenuItem onClick={onAdvisorClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold text-brand-600">Ask an Advisor</DropdownMenuItem>
+                <DropdownMenuItem onClick={onEmiClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">EMI Calculator</DropdownMenuItem>
+                <DropdownMenuItem onClick={onAdvisorClick} className="rounded-lg cursor-pointer py-2.5 px-3 text-brand-600">Ask an Advisor</DropdownMenuItem>
               </NavDropdown>
               <NavDropdown label="Home Interiors">
                 <div className="px-3 py-2.5 text-xs text-stone-500 leading-relaxed">Interior design partners coming soon to select markets.</div>
@@ -1177,6 +1178,8 @@ const Dashboard = () => {
   const [browseMode, setBrowseMode] = useState<'buy' | 'rent'>('buy');
   const [isEvaluateOpen, setIsEvaluateOpen] = useState(false);
   const [evalForm, setEvalForm] = useState({ country: 'United States', city: 'New York', area: '' });
+  const [isEmiOpen, setIsEmiOpen] = useState(false);
+  const [emiForm, setEmiForm] = useState({ price: 500000, downPaymentPct: 20, rate: 6.5, years: 20, currency: 'USD' });
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Load and save favorite items
@@ -1656,6 +1659,7 @@ const Dashboard = () => {
         onEvaluateClick={() => setIsEvaluateOpen(true)}
         onInvestClick={() => scrollToSection('market')}
         onAdvisorClick={() => openWhatsApp("Hi! I'd like to speak with a JG Estate advisor about buying, selling, or renting a property.")}
+        onEmiClick={() => setIsEmiOpen(true)}
       />
       {/* Hero — search-first, product-forward. Replaces the old editorial photo-collage
           layout: the primary action is a real search bar, not a scroll cue. */}
@@ -1897,6 +1901,69 @@ const Dashboard = () => {
                   <p className="text-sm font-bold text-stone-900">{t.name}</p>
                   <p className="text-xs text-stone-400 font-medium">{t.role}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Property News & Guides — market commentary and buyer education, the kind of
+          content MagicBricks runs under "Property Pulse" / their Buyer's Guide. */}
+      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
+        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="max-w-2xl space-y-3 sm:space-y-4">
+              <p className="micro-label text-brand-600">Property News & Guides</p>
+              <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">Stay ahead of the market</h2>
+            </div>
+            <button
+              onClick={() => openWhatsApp("Hi! I'd like to get real estate market updates and buying guides from JG Estate.")}
+              className="text-sm font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1.5 shrink-0"
+            >
+              Get Updates <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {[
+              {
+                category: 'Market News', icon: TrendingUp,
+                title: `Global Real Estate Index up ${COMPOSITE_YTD_GROWTH}% YTD`,
+                excerpt: 'A look at which of our 10 markets are driving global price growth this year, and which are cooling.',
+                read: '4 min read',
+              },
+              {
+                category: "Buyer's Guide", icon: Building2,
+                title: 'Buying property abroad: a first-timer\'s checklist',
+                excerpt: 'ID verification, local ownership rules, currency exposure and financing — what to sort out before you make an offer.',
+                read: '6 min read',
+              },
+              {
+                category: 'Legal & Compliance', icon: Gavel,
+                title: 'Cross-border property law, explained simply',
+                excerpt: 'Ownership restrictions, tax treaties and title verification vary by country — here\'s how to navigate them.',
+                read: '5 min read',
+              },
+              {
+                category: 'Financing', icon: Landmark,
+                title: 'How lenders evaluate international buyers',
+                excerpt: 'Down payments, interest rates and eligibility criteria differ sharply by market — use our EMI calculator to model it.',
+                read: '3 min read',
+              },
+            ].map((article) => (
+              <div
+                key={article.title}
+                onClick={() => openWhatsApp(`Hi! I'd like to read more about: "${article.title}"`)}
+                className="bg-white border border-stone-200 rounded-2xl p-6 space-y-4 cursor-pointer hover:border-brand-300 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="bg-brand-50 w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
+                    <article.icon className="w-4 h-4 text-brand-600" />
+                  </div>
+                  <span className="micro-label text-brand-600">{article.category}</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-stone-900 leading-snug group-hover:text-brand-600 transition-colors">{article.title}</h3>
+                <p className="text-sm text-stone-500 leading-relaxed">{article.excerpt}</p>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{article.read}</p>
               </div>
             ))}
           </div>
@@ -3012,6 +3079,112 @@ const Dashboard = () => {
           >
             <WhatsAppIcon className="w-4 h-4 mr-2" />
             Get a Professional Valuation
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* EMI / Home Loan Calculator */}
+      <Dialog open={isEmiOpen} onOpenChange={setIsEmiOpen}>
+        <DialogContent
+          onClose={() => setIsEmiOpen(false)}
+          className="sm:max-w-lg bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
+        >
+          <DialogHeader className="space-y-2 sm:space-y-4">
+            <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">EMI Calculator</DialogTitle>
+            <DialogDescription className="text-stone-500 text-sm sm:text-base font-medium">
+              Estimate your monthly loan payment. This is indicative only — actual rates depend on your lender and eligibility.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 sm:gap-6 py-6 sm:py-8">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-2 sm:space-y-3">
+                <Label className="micro-label">Currency</Label>
+                <select
+                  value={emiForm.currency}
+                  onChange={(e) => setEmiForm({ ...emiForm, currency: e.target.value })}
+                  className="w-full rounded-xl border border-stone-100 bg-stone-50 font-bold text-sm px-4 py-2.5 h-11"
+                >
+                  {Object.keys(CURRENCY_META).map(code => <option key={code} value={code}>{code}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2 sm:space-y-3">
+                <Label className="micro-label">Property Price</Label>
+                <Input
+                  type="number"
+                  value={emiForm.price}
+                  onChange={(e) => setEmiForm({ ...emiForm, price: Number(e.target.value) })}
+                  className="rounded-xl border-stone-100 bg-stone-50 font-bold"
+                />
+              </div>
+            </div>
+            <div className="space-y-2 sm:space-y-3">
+              <Label className="micro-label">Down Payment — {emiForm.downPaymentPct}%</Label>
+              <input
+                type="range"
+                min={0}
+                max={90}
+                step={5}
+                value={emiForm.downPaymentPct}
+                onChange={(e) => setEmiForm({ ...emiForm, downPaymentPct: Number(e.target.value) })}
+                className="w-full accent-brand-600"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-2 sm:space-y-3">
+                <Label className="micro-label">Interest Rate (% p.a.)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={emiForm.rate}
+                  onChange={(e) => setEmiForm({ ...emiForm, rate: Number(e.target.value) })}
+                  className="rounded-xl border-stone-100 bg-stone-50 font-bold"
+                />
+              </div>
+              <div className="space-y-2 sm:space-y-3">
+                <Label className="micro-label">Loan Tenure (years)</Label>
+                <Input
+                  type="number"
+                  value={emiForm.years}
+                  onChange={(e) => setEmiForm({ ...emiForm, years: Number(e.target.value) })}
+                  className="rounded-xl border-stone-100 bg-stone-50 font-bold"
+                />
+              </div>
+            </div>
+
+            {(() => {
+              const principal = emiForm.price * (1 - emiForm.downPaymentPct / 100);
+              const monthlyRate = emiForm.rate / 100 / 12;
+              const months = emiForm.years * 12;
+              if (!(principal > 0) || !(monthlyRate > 0) || !(months > 0)) return null;
+              const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+              const totalPayment = emi * months;
+              const totalInterest = totalPayment - principal;
+              return (
+                <div className="bg-brand-50 border border-brand-100 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div>
+                    <p className="micro-label text-brand-600">Monthly EMI</p>
+                    <p className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight">{formatPriceFull(Math.round(emi), emiForm.currency)}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-brand-100">
+                    <div>
+                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Principal</p>
+                      <p className="text-sm sm:text-base font-bold text-stone-900">{formatPriceFull(Math.round(principal), emiForm.currency)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Total Interest</p>
+                      <p className="text-sm sm:text-base font-bold text-stone-900">{formatPriceFull(Math.round(totalInterest), emiForm.currency)}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          <Button
+            onClick={() => openWhatsApp(`Hi! I used the EMI calculator on JG Estate (price ${formatPriceFull(emiForm.price, emiForm.currency)}, ${emiForm.downPaymentPct}% down, ${emiForm.rate}% rate, ${emiForm.years} years) and I'd like to talk to a financing partner.`)}
+            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
+          >
+            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            Talk to a Financing Partner
           </Button>
         </DialogContent>
       </Dialog>
