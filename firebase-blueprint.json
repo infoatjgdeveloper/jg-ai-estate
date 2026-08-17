@@ -1,0 +1,149 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information with role-based access",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["developer", "investor", "admin"] },
+        "region": { "type": "string" },
+        "currency": { "type": "string", "default": "USD" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Real estate project with RERA verification for India",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "developerId": { "type": "string" },
+        "developerName": { "type": "string" },
+        "reraId": { "type": "string", "description": "RERA Registration Number" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "location": { "type": "string" },
+        "city": { "type": "string" },
+        "region": { "type": "string", "enum": ["North India", "South India", "West India", "East India", "Global"] },
+        "totalUnits": { "type": "number" },
+        "basePrice": { "type": "number" },
+        "currency": { "type": "string", "default": "INR" },
+        "imageUrl": { "type": "string" },
+        "aiValuation": { "type": "number" },
+        "marketTrend": { "type": "string", "enum": ["Bullish", "Stable", "Bearish"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["developerId", "name", "totalUnits", "basePrice", "region", "city", "reraId"]
+    },
+    "Unit": {
+      "title": "Unit",
+      "description": "Individual flat or property unit with resale and financing status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "unitNumber": { "type": "string" },
+        "status": { "type": "string", "enum": ["available", "booked", "sold", "resale"] },
+        "price": { "type": "number" },
+        "currentOwnerId": { "type": "string" },
+        "bookingAmount": { "type": "number" },
+        "lastValuation": { "type": "number" },
+        "isResaleEligible": { "type": "boolean", "default": true },
+        "resalePrice": { "type": "number" }
+      },
+      "required": ["projectId", "unitNumber", "status", "price"]
+    },
+    "Investment": {
+      "title": "Investment",
+      "description": "Investment details with installment tracking and digital documents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "unitId": { "type": "string" },
+        "investorId": { "type": "string" },
+        "paymentPlan": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["Full Payment", "Installments", "Financed"] },
+            "totalInstallments": { "type": "number" },
+            "paidInstallments": { "type": "number" }
+          }
+        },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "completed", "defaulted"] },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string", "enum": ["Sale Agreement", "Khata", "Possession Letter", "Tax Receipt"] },
+              "status": { "type": "string", "enum": ["pending", "signed", "verified"] },
+              "url": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["unitId", "investorId", "totalAmount", "paidAmount"]
+    },
+    "Bid": {
+      "title": "Bid",
+      "description": "Live bid on a resale property",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "unitId": { "type": "string" },
+        "bidderId": { "type": "string" },
+        "bidderName": { "type": "string" },
+        "amount": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] }
+      },
+      "required": ["unitId", "bidderId", "amount"]
+    },
+    "MarketData": {
+      "title": "MarketData",
+      "description": "Global market trends for analytics",
+      "type": "object",
+      "properties": {
+        "region": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "indexValue": { "type": "number" },
+        "volume": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Real estate projects"
+    },
+    "/projects/{projectId}/units/{unitId}": {
+      "schema": "Unit",
+      "description": "Units within a project"
+    },
+    "/investments/{investmentId}": {
+      "schema": "Investment",
+      "description": "Investment tracking"
+    },
+    "/units/{unitId}/bids/{bidId}": {
+      "schema": "Bid",
+      "description": "Bids for unit resale"
+    },
+    "/market_data/{dataId}": {
+      "schema": "MarketData",
+      "description": "Global market analytics"
+    }
+  }
+}

@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {userId}
+    // Fields: uid, email, displayName, role (developer|investor|admin), region, currency, createdAt
+    
+    // Collection: projects
+    // Document ID: {projectId}
+    // Fields: developerId, name, description, location, region, totalUnits, basePrice, currency, imageUrl, aiValuation, marketTrend, createdAt
+    
+    // Collection: projects/{projectId}/units
+    // Document ID: {unitId}
+    // Fields: projectId, unitNumber, status (available|booked|sold|resale), price, currentOwnerId, bookingAmount, lastValuation
+    
+    // Collection: investments
+    // Document ID: {investmentId}
+    // Fields: unitId, investorId, term, totalAmount, paidAmount, startDate, endDate, status, documents
+    
+    // Collection: units/{unitId}/bids
+    // Document ID: {bidId}
+    // Fields: unitId, bidderId, bidderName, amount, timestamp, status
+    
+    // Collection: market_data
+    // Document ID: {dataId}
+    // Fields: region, date, indexValue, volume
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "GajjarJay79@gmail.com" || 
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function isDeveloper() {
+      return isAuthenticated() && 
+        (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'developer'));
+    }
+    
+    function isInvestor() {
+      return isAuthenticated() && 
+        (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'investor'));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidString(val, maxLen) {
+      return val == null || (val is string && val.size() <= maxLen);
+    }
+
+    function isValidUrl(url) {
+      return url == null || (url is string && (url.matches("^https://.*") || url.matches("^http://.*")));
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ['developer', 'investor', 'admin'];
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['developerId', 'name', 'basePrice']) &&
+             (data.developerId == request.auth.uid || data.developerId == 'system') &&
+             isValidString(data.name, 200) &&
+             data.basePrice is number && data.basePrice > 0;
+    }
+
+    function isValidInvestment(data) {
+      return data.keys().hasAll(['unitId', 'projectId', 'investorId', 'totalAmount', 'paidAmount']) &&
+             data.investorId == request.auth.uid &&
+             data.totalAmount is number && data.totalAmount > 0 &&
+             data.paidAmount is number && data.paidAmount >= 0;
+    }
+
+    function isValidBid(data) {
+      return data.keys().hasAll(['unitId', 'bidderId', 'amount']) &&
+             data.bidderId == request.auth.uid &&
+             data.amount is number && data.amount > 0;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && 
+                      isValidUser(request.resource.data) &&
+                      (request.resource.data.role != 'admin' || request.auth.token.email == "GajjarJay79@gmail.com");
+      allow update: if isOwner(userId) && 
+                      isValidUser(request.resource.data) &&
+                      (request.resource.data.role in ['developer', 'investor'] || isAdmin());
+    }
+
+    match /projects/{projectId} {
+      allow read: if true;
+      allow create: if (isDeveloper() || (isAuthenticated() && request.resource.data.developerId == 'system')) && isValidProject(request.resource.data);
+      allow update: if isDeveloper() && (resource.data.developerId == request.auth.uid || isAdmin()) && isValidProject(request.resource.data);
+      allow delete: if isDeveloper() && (resource.data.developerId == request.auth.uid || isAdmin());
+      
+      match /units/{unitId} {
+        allow read: if true;
+        allow create: if isDeveloper() || (isAuthenticated() && get(/databases/$(database)/documents/projects/$(projectId)).data.developerId == 'system');
+        allow update: if isAuthenticated();
+        
+        match /bids/{bidId} {
+          allow read: if isAuthenticated();
+          allow create: if isInvestor() && isValidBid(request.resource.data);
+          allow update: if isAuthenticated() && (request.auth.uid == resource.data.bidderId || isDeveloper()) && isValidBid(request.resource.data);
+        }
+      }
+    }
+
+    // Support collection group queries on units
+    match /{path=**}/units/{unitId} {
+      allow read: if true;
+    }
+
+    match /investments/{investmentId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.investorId || isDeveloper());
+      allow create: if isInvestor() && isValidInvestment(request.resource.data);
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.investorId || isDeveloper()) && isValidInvestment(request.resource.data);
+    }
+
+    match /market_data/{dataId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
