@@ -290,21 +290,22 @@ const TICKERS = [
 
 const TickerItem = ({ ticker }: { ticker: typeof TICKERS[number] }) => (
   <div className="flex items-center gap-3 text-[12px] font-mono font-bold tracking-widest text-white">
-    <span className="opacity-70">{ticker.symbol}</span>
+    <span className="text-brand-300">{ticker.symbol}</span>
     <span>{ticker.price}</span>
     <span className={ticker.change.startsWith('+') ? 'text-emerald-300' : 'text-rose-300'}>{ticker.change}</span>
   </div>
 );
 
-// Small dropdown trigger used for the nav row (Buy / Rent / Sell / ... with a caret, MagicBricks-style)
+// Small dropdown trigger used for the nav row (Buy / Rent / Sell / ...) — pill-style hover
+// state rather than a plain color swap, so the nav reads as its own thing at a glance.
 const NavDropdown = ({ label, badge, children }: { label: string, badge?: string, children: React.ReactNode }) => (
   <DropdownMenu>
-    <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-bold text-stone-700 hover:text-brand-600 transition-colors outline-none">
+    <DropdownMenuTrigger className="group flex items-center gap-1 text-sm font-bold text-stone-700 rounded-full px-3 py-1.5 -mx-3 -my-1.5 hover:bg-brand-50 hover:text-brand-700 transition-colors outline-none">
       {label}
-      {badge && <Badge className="bg-amber-400 text-stone-900 border-none text-[9px] font-extrabold px-1.5 py-0 rounded-sm ml-0.5">{badge}</Badge>}
-      <ChevronDown className="w-3.5 h-3.5" />
+      {badge && <Badge className="bg-amber-400 text-stone-900 border-none text-[9px] font-extrabold px-1.5 py-0 rounded-full ml-0.5">{badge}</Badge>}
+      <ChevronDown className="w-3.5 h-3.5 transition-transform group-aria-expanded:rotate-180" />
     </DropdownMenuTrigger>
-    <DropdownMenuContent className="w-60 bg-white border-stone-200 rounded-xl p-2 shadow-2xl" align="start">
+    <DropdownMenuContent className="w-60 bg-white border-stone-200 rounded-2xl p-2 shadow-2xl" align="start">
       {children}
     </DropdownMenuContent>
   </DropdownMenu>
@@ -331,16 +332,24 @@ const Navbar = ({
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 shadow-sm">
-      {/* Row 1: live market ticker */}
-      <div className="w-full bg-stone-900 py-1.5 overflow-hidden">
+      {/* Row 1: live market ticker — deep navy gradient tied to the brand blue (not neutral black),
+          plus a pulsing LIVE dot so it reads as our own live-data strip. */}
+      <div className="w-full bg-gradient-to-r from-brand-950 via-stone-900 to-brand-950 py-1.5 overflow-hidden">
         <div className="flex items-center gap-16 animate-marquee whitespace-nowrap">
+          <div className="flex items-center gap-1.5 pl-4 shrink-0">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
+            </span>
+            <span className="text-[11px] font-mono font-bold tracking-widest text-emerald-300">LIVE</span>
+          </div>
           {TICKERS.map((ticker, i) => <TickerItem key={i} ticker={ticker} />)}
           {TICKERS.map((ticker, i) => <TickerItem key={`dup-${i}`} ticker={ticker} />)}
         </div>
       </div>
 
       {/* Row 2: utility bar — location + login + post property */}
-      <div className="w-full bg-brand-600 text-white">
+      <div className="w-full bg-gradient-to-r from-brand-700 via-brand-600 to-brand-600 text-white">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-2 flex items-center justify-between text-xs sm:text-sm font-bold">
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 hover:text-white/80 outline-none">
@@ -362,10 +371,10 @@ const Navbar = ({
             {!user && <button onClick={signIn} className="hidden sm:inline hover:text-white/80">Login</button>}
             <button
               onClick={onSellClick}
-              className="bg-white text-brand-600 hover:bg-white/90 rounded-full px-4 py-1.5 flex items-center gap-1.5 shadow-sm"
+              className="bg-white text-brand-700 hover:bg-white/90 rounded-full px-4 py-1.5 flex items-center gap-1.5 shadow-sm ring-1 ring-white/40"
             >
               Post Property
-              <span className="bg-amber-400 text-stone-900 text-[9px] font-extrabold px-1.5 py-0.5 rounded-sm">FREE</span>
+              <span className="bg-amber-400 text-stone-900 text-[9px] font-extrabold px-2 py-0.5 rounded-full">FREE</span>
             </button>
           </div>
         </div>
@@ -375,9 +384,11 @@ const Navbar = ({
       <div className="w-full bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6 md:gap-10">
-            {/* TODO: drop in the provided logo image here, e.g. <img src="/logo.svg" className="h-8 md:h-10 w-auto" alt="JG Estate" /> */}
-            <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-              <span className="text-lg md:text-2xl font-extrabold text-stone-900 tracking-tight">JG&nbsp;Estate</span>
+            {/* TODO: swap this monogram badge for the provided logo image, e.g.
+                <img src="/logo.svg" className="h-8 md:h-10 w-auto" alt="JG Estate" /> */}
+            <div className="flex items-center gap-2.5 cursor-pointer shrink-0" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <span className="flex items-center justify-center h-8 w-8 md:h-9 md:w-9 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white text-sm md:text-base font-extrabold shadow-sm">JG</span>
+              <span className="text-lg md:text-2xl font-extrabold text-stone-900 tracking-tight">Estate</span>
             </div>
 
             <div className="hidden lg:flex items-center gap-7">
@@ -407,7 +418,7 @@ const Navbar = ({
                 <DropdownMenuItem onClick={onInvestClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">Global Market Index</DropdownMenuItem>
                 <DropdownMenuItem onClick={onMarketplaceClick} className="rounded-lg cursor-pointer py-2.5 px-3">My Portfolio</DropdownMenuItem>
               </NavDropdown>
-              <a href="#" onClick={(e) => { e.preventDefault(); onAdvisorClick(); }} className="text-sm font-bold text-stone-700 hover:text-brand-600 transition-colors">Help</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); onAdvisorClick(); }} className="text-sm font-bold text-stone-700 rounded-full px-3 py-1.5 -mx-3 -my-1.5 hover:bg-brand-50 hover:text-brand-700 transition-colors">Help</a>
             </div>
           </div>
 
@@ -2903,11 +2914,16 @@ const Dashboard = () => {
       </Dialog>
 
       {/* Footer */}
-      <footer className="mt-24 sm:mt-40 border-t border-stone-200 bg-white">
+      <footer className="mt-24 sm:mt-40 bg-white">
+        {/* Thin brand accent bar — a signature strip rather than a plain border */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-brand-700 via-brand-500 to-brand-700" />
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-14 sm:py-20 grid grid-cols-2 md:grid-cols-6 gap-8 sm:gap-10">
           <div className="col-span-2 space-y-4">
-            {/* TODO: drop in the provided logo image here */}
-            <p className="text-xl font-extrabold text-stone-900">JG&nbsp;Estate</p>
+            {/* TODO: swap this monogram badge for the provided logo image */}
+            <div className="flex items-center gap-2.5">
+              <span className="flex items-center justify-center h-8 w-8 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white text-sm font-extrabold shadow-sm">JG</span>
+              <p className="text-xl font-extrabold text-stone-900">Estate</p>
+            </div>
             <p className="text-sm text-stone-500 leading-relaxed max-w-xs">
               A global, EU-first marketplace to buy, sell, and rent verified real estate — with live market data across {COUNTRIES.length} countries.
             </p>
@@ -2939,8 +2955,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Full country + city coverage — every market we track, browsable by location */}
-        <div className="border-t border-stone-100 bg-stone-50">
+        {/* Full country + city coverage — every market we track, browsable by location.
+            Brand-tinted (not neutral gray) so it still reads as "ours" at this scale. */}
+        <div className="border-t border-brand-100 bg-brand-50/40">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-14 space-y-6">
             <p className="micro-label text-stone-400">Browse Properties by Country & City</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-6">
@@ -2971,14 +2988,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="border-t border-stone-100">
+        {/* Dark navy signature strip for the legal line — a two-tone footer (white body,
+            deep-navy base) instead of a single flat bar all the way down. */}
+        <div className="bg-stone-950">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-stone-400 font-medium text-center sm:text-left">
+            <p className="text-xs text-white/50 font-medium text-center sm:text-left">
               © {new Date().getFullYear()} JG Estate. Listings shown are for demonstration. Payments are processed by licensed third-party providers — this platform does not hold client funds in escrow.
             </p>
-            <div className="flex items-center gap-4 text-xs font-bold text-stone-400 uppercase tracking-widest">
+            <div className="flex items-center gap-4 text-xs font-bold text-brand-300 uppercase tracking-widest">
               <span>🌍 Global</span>
-              <span>·</span>
+              <span className="text-white/20">·</span>
               <span>EU-First</span>
             </div>
           </div>
