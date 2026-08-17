@@ -225,7 +225,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-stone-50 p-8">
-          <Card className="max-w-md w-full border-red-100 shadow-2xl rounded-[2.5rem]">
+          <Card className="max-w-md w-full border-red-100 shadow-2xl rounded-3xl">
             <CardHeader className="text-center space-y-4">
               <div className="mx-auto w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center">
                 <AlertCircle className="w-8 h-8 text-red-600" />
@@ -625,10 +625,10 @@ const ProjectCard: React.FC<{
 
   return (
     <div 
-      className="group cursor-pointer relative flex flex-col h-full focus-within:ring-2 focus-within:ring-brand-600 rounded-[1.5rem] sm:rounded-[2.5rem]"
+      className="group cursor-pointer relative flex flex-col h-full focus-within:ring-2 focus-within:ring-brand-600 rounded-3xl"
       onClick={() => onSelect(project)}
     >
-      <Card className="overflow-hidden border-stone-200 bg-white rounded-[1.5rem] sm:rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col h-full border hover:border-stone-300">
+      <Card className="overflow-hidden border-stone-200 bg-white rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full border hover:border-stone-300">
         <div className="aspect-[16/11] relative overflow-hidden shrink-0">
           <img 
             src={project.imageUrl || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80`} 
@@ -1023,7 +1023,7 @@ const InvestmentTracker: React.FC<{ investment: Investment, onRelist: (i: Invest
 };
 
 const ResaleListing: React.FC<{ unit: Unit, onBid: (u: Unit) => void }> = ({ unit, onBid }) => (
-  <Card className="bg-white border-stone-200 hover:border-brand-600/50 transition-all group rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl">
+  <Card className="bg-white border-stone-200 hover:border-brand-600/50 transition-all group rounded-3xl overflow-hidden shadow-sm hover:shadow-lg">
     <div className="aspect-square relative overflow-hidden">
       <img 
         src={`https://picsum.photos/seed/unit-${unit.id}/400/400`} 
@@ -1068,7 +1068,7 @@ const CountryIndexCard: React.FC<{ country: Country; onSelect: (name: string) =>
   return (
     <Card
       onClick={() => onSelect(country.name)}
-      className="border-stone-200 bg-white shadow-sm hover:shadow-xl hover:border-brand-300 transition-all cursor-pointer rounded-3xl overflow-hidden group"
+      className="border-stone-200 bg-white shadow-sm hover:shadow-lg hover:border-brand-300 transition-all cursor-pointer rounded-3xl overflow-hidden group"
     >
       <CardContent className="p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
@@ -1657,68 +1657,63 @@ const Dashboard = () => {
         onInvestClick={() => scrollToSection('market')}
         onAdvisorClick={() => openWhatsApp("Hi! I'd like to speak with a JG Estate advisor about buying, selling, or renting a property.")}
       />
-      {/* Hero Section — asymmetric editorial layout */}
-      <section className="relative pt-36 sm:pt-48 pb-16 sm:pb-28 overflow-hidden px-4 sm:px-8 border-b border-stone-200">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-          {/* Left: editorial copy block */}
-          <div className="lg:col-span-6 space-y-6 md:space-y-8 relative z-20">
-            <Badge className="bg-brand-600/10 text-brand-600 border-brand-600/20 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit">
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
-              AI-Powered Global Asset Intelligence
-            </Badge>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-stone-900 tracking-tighter leading-[0.98]">
-              Buy & sell property
-              <br />
-              <span className="text-brand-600">anywhere,</span>
-              <br />
-              verified.
-            </h1>
-            <p className="text-base sm:text-xl text-stone-600 max-w-lg font-medium leading-relaxed">
-              A truly global marketplace across 10 countries — from the US and UK to Germany, the UAE and India. Priced in each market's local currency, ID-verified sellers, licensed payment processors, live market data.
-            </p>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 pt-2">
+      {/* Hero — search-first, product-forward. Replaces the old editorial photo-collage
+          layout: the primary action is a real search bar, not a scroll cue. */}
+      <section className="relative pt-32 sm:pt-44 pb-16 sm:pb-24 px-4 sm:px-8 overflow-hidden bg-gradient-to-b from-brand-50/70 via-white to-white border-b border-stone-200">
+        <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-100/50 via-transparent to-transparent pointer-events-none" />
+        <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8 relative z-10">
+          <Badge className="bg-white text-brand-600 border-brand-200 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit mx-auto shadow-sm">
+            <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
+            Live Across {COUNTRIES.length} Countries
+          </Badge>
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-stone-900 tracking-tighter leading-[1.03]">
+            Buy, rent or sell property
+            <br className="hidden sm:block" />
+            <span className="text-brand-600">anywhere in the world.</span>
+          </h1>
+          <p className="text-base sm:text-xl text-stone-600 max-w-2xl mx-auto font-medium leading-relaxed">
+            Verified listings, live market data and licensed payment processing — priced in local currency, wherever you're buying.
+          </p>
+
+          {/* Primary action: search, not scroll */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xl shadow-stone-200/50 p-3 sm:p-4 max-w-2xl mx-auto">
+            <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
+              <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
+                {(['buy', 'rent'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setBrowseMode(mode)}
+                    className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold capitalize transition-all ${
+                      browseMode === mode ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && scrollToSection('catalog')}
+                  placeholder="Search city, country or project..."
+                  className="w-full pl-10 pr-3 py-3 sm:py-3.5 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:bg-white text-sm font-medium text-stone-900"
+                />
+              </div>
               <Button
                 onClick={() => scrollToSection('catalog')}
-                className="bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-2xl px-8 py-6 md:px-10 md:py-7 text-sm md:text-base shadow-xl transition-all hover:scale-[1.02] w-full sm:w-auto"
+                className="bg-brand-600 text-white hover:bg-stone-900 font-bold rounded-xl px-6 sm:px-8 py-3 sm:py-3.5 text-sm shadow-sm transition-all"
               >
-                Explore Listings
+                Search
               </Button>
-              <Button
-                onClick={() => scrollToSection('market')}
-                variant="outline"
-                className="border-stone-300 text-stone-900 hover:bg-stone-100 rounded-2xl px-8 py-6 md:px-10 md:py-7 text-sm md:text-base font-bold w-full sm:w-auto"
-              >
-                View Market Data
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-400">
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-brand-600" /> 12-Point Verification</span>
-              <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-brand-600" /> 10 Countries</span>
-              <span className="flex items-center gap-1.5"><Landmark className="w-3.5 h-3.5 text-brand-600" /> Licensed Payment Processors</span>
             </div>
           </div>
 
-          {/* Right: offset photo collage with a floating stat card */}
-          <div className="lg:col-span-6 relative h-[380px] sm:h-[480px] lg:h-[560px]">
-            <div className="absolute top-0 right-[8%] w-[62%] h-[68%] rounded-[2rem] overflow-hidden shadow-2xl rotate-2">
-              <img
-                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div className="absolute bottom-0 left-0 w-[52%] h-[52%] rounded-[1.75rem] overflow-hidden shadow-2xl -rotate-3 border-4 border-white">
-              <img
-                src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div className="absolute bottom-[6%] right-0 bg-white rounded-[1.5rem] shadow-2xl border border-stone-200 p-5 sm:p-6 w-[62%] sm:w-[55%] space-y-1">
-              <p className="micro-label text-brand-600">Global Real Estate Index</p>
-              <p className="text-3xl sm:text-4xl font-extrabold text-stone-900">+12.4%</p>
-              <p className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">YTD growth, EU-weighted</p>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-400">
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-brand-600" /> ID-Verified Sellers</span>
+            <span className="flex items-center gap-1.5"><Landmark className="w-3.5 h-3.5 text-brand-600" /> Licensed Payment Processors</span>
+            <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-brand-600" /> Live Market Data</span>
           </div>
         </div>
       </section>
@@ -1765,7 +1760,7 @@ const Dashboard = () => {
                 onClick: () => scrollToSection('market'),
               },
             ].map((p) => (
-              <div key={p.role} className="group bg-stone-800/60 hover:bg-stone-800 border border-stone-700 hover:border-brand-500/50 rounded-[1.5rem] sm:rounded-[2rem] p-6 sm:p-8 flex flex-col justify-between gap-6 sm:gap-8 transition-all">
+              <div key={p.role} className="group bg-stone-800/60 hover:bg-stone-800 border border-stone-700 hover:border-brand-500/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 sm:gap-8 transition-all">
                 <div className="space-y-3 sm:space-y-4">
                   <div className="bg-brand-500/10 w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
                     <p.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-400" />
@@ -1786,6 +1781,151 @@ const Dashboard = () => {
         </div>
       </section>
 
+      {/* Stats bar — pulled straight from the same COUNTRIES dataset that powers the
+          market index and filters, not marketing fluff. */}
+      <section className="bg-white border-b border-stone-200 py-10 sm:py-14 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {[
+            { value: `${COUNTRIES.length}`, label: 'Countries Live' },
+            { value: `${ALL_CITIES.length}`, label: 'Cities Tracked' },
+            { value: `${COMPOSITE_YTD_GROWTH}%`, label: 'Global Index, YTD' },
+            { value: '12-Point', label: 'Verification Standard' },
+          ].map((s) => (
+            <div key={s.label} className="text-center lg:text-left space-y-1">
+              <p className="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight">{s.value}</p>
+              <p className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase tracking-widest">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
+        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <div className="max-w-2xl space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-600">How It Works</p>
+            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">From search to keys, in three steps</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              { step: '01', icon: Search, title: 'Search & Compare', copy: 'Filter by country, city, budget and property type — with live pricing in local currency.' },
+              { step: '02', icon: ShieldCheck, title: 'Verify & Connect', copy: 'Every seller passes ID verification. Message an agent or advisor directly, no middlemen.' },
+              { step: '03', icon: Landmark, title: 'Close Securely', copy: 'Payments route through licensed third-party processors in each market — never held by this platform.' },
+            ].map((s) => (
+              <div key={s.step} className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="bg-brand-50 w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center">
+                    <s.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600" />
+                  </div>
+                  <span className="text-3xl sm:text-4xl font-extrabold text-stone-100">{s.step}</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-stone-900">{s.title}</h3>
+                <p className="text-sm text-stone-500 leading-relaxed">{s.copy}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing — the SaaS layer: buyers and renters always browse free, this is what
+          agents and builders pay for as they outgrow the free tier. */}
+      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white border-b border-stone-200">
+        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <div className="max-w-2xl mx-auto text-center space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-600">Plans for Agents & Builders</p>
+            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">List for free. Scale when you're ready.</h2>
+            <p className="text-sm sm:text-base text-stone-500 font-medium">Buyers and renters always browse for free. These plans are for the professionals listing property.</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
+            {[
+              { name: 'Starter', price: 'Free', period: '', desc: 'For individual agents listing a handful of properties.', features: ['Up to 5 active listings', 'Standard search placement', 'WhatsApp buyer enquiries', 'Basic market data access'], cta: 'Start Free', highlight: false },
+              { name: 'Professional', price: '$49', period: '/mo', desc: 'For agencies and growing teams.', features: ['Unlimited active listings', 'Priority search placement', 'Full portfolio dashboard', 'Advanced market analytics', 'Verified agent badge'], cta: 'Start Free Trial', highlight: true },
+              { name: 'Enterprise', price: 'Custom', period: '', desc: 'For builders and developers with multi-project inventory.', features: ['Bulk project & unit uploads', 'Construction-stage sales tracking', 'Dedicated account manager', 'API access', 'Custom reporting'], cta: 'Talk to Sales', highlight: false },
+            ].map((plan) => (
+              <div
+                key={plan.name}
+                className={`rounded-2xl p-6 sm:p-8 space-y-6 flex flex-col ${plan.highlight ? 'bg-stone-900 text-white border border-stone-900 lg:-translate-y-3 shadow-xl' : 'bg-white border border-stone-200'}`}
+              >
+                <div className="space-y-2">
+                  {plan.highlight && <Badge className="bg-brand-600 text-white border-none text-[9px] font-extrabold px-2.5 py-1 rounded-full w-fit">MOST POPULAR</Badge>}
+                  <h3 className={`text-xl font-bold ${plan.highlight ? 'text-white' : 'text-stone-900'}`}>{plan.name}</h3>
+                  <p className={`text-sm ${plan.highlight ? 'text-white/60' : 'text-stone-500'}`}>{plan.desc}</p>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-4xl font-extrabold ${plan.highlight ? 'text-white' : 'text-stone-900'}`}>{plan.price}</span>
+                  {plan.period && <span className={plan.highlight ? 'text-white/50' : 'text-stone-400'}>{plan.period}</span>}
+                </div>
+                <ul className="space-y-2.5 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f} className={`flex items-start gap-2.5 text-sm ${plan.highlight ? 'text-white/80' : 'text-stone-600'}`}>
+                      <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${plan.highlight ? 'text-brand-400' : 'text-brand-600'}`} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  onClick={() => (plan.name === 'Enterprise' ? openWhatsApp("Hi! I'd like to talk about an Enterprise / builder plan on JG Estate.") : (user ? setIsLaunchOpen(true) : signIn()))}
+                  className={`w-full font-bold rounded-xl py-5 sm:py-6 ${plan.highlight ? 'bg-white text-stone-900 hover:bg-brand-50' : 'bg-stone-900 text-white hover:bg-brand-600'}`}
+                >
+                  {plan.cta}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
+        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <div className="max-w-2xl space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-600">What People Are Saying</p>
+            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">Trusted by buyers, agents and investors</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              { quote: "Found and closed on an apartment in Lisbon without ever leaving New York. The verification process made it feel safe.", name: 'Amara O.', role: 'Buyer, United States' },
+              { quote: "Listing our projects here cut our time-to-sale significantly — the market data alone is worth it.", name: 'Rajiv M.', role: 'Developer, India' },
+              { quote: "I use the global index every week to decide where to allocate next. It's the first dashboard I open.", name: 'Sophie L.', role: 'Investor, Germany' },
+            ].map((t) => (
+              <div key={t.name} className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 space-y-5">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                </div>
+                <p className="text-sm sm:text-base text-stone-700 leading-relaxed">"{t.quote}"</p>
+                <div>
+                  <p className="text-sm font-bold text-stone-900">{t.name}</p>
+                  <p className="text-xs text-stone-400 font-medium">{t.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white">
+        <div className="max-w-4xl mx-auto space-y-10 sm:space-y-14">
+          <div className="text-center space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-600">Questions</p>
+            <h2 className="text-3xl sm:text-5xl font-bold text-stone-900 tracking-tighter">Frequently asked</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
+            {[
+              { q: 'Is listing a property really free?', a: 'Yes — individual agents can list up to 5 active properties at no cost. Agencies and builders with more inventory can upgrade to Professional or Enterprise.' },
+              { q: 'What currency are prices shown in?', a: "Every listing shows in its own market's local currency. Filters and comparisons use USD as a common baseline, but nothing converts automatically at checkout." },
+              { q: 'How are sellers verified?', a: 'Every seller goes through a 12-point ID and legal-compliance check before their listing goes live.' },
+              { q: 'Does this platform hold my payment?', a: 'No. Payments are always routed through licensed third-party payment processors in the relevant market — this platform never holds client funds.' },
+            ].map((f) => (
+              <div key={f.q} className="space-y-2">
+                <h3 className="text-base sm:text-lg font-bold text-stone-900">{f.q}</h3>
+                <p className="text-sm text-stone-500 leading-relaxed">{f.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-24 md:space-y-40 pt-16 sm:pt-24 relative z-30">
         {/* Market Overview */}
         <div id="market" className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
@@ -1793,14 +1933,14 @@ const Dashboard = () => {
             <MarketAnalytics />
           </div>
           <div className="space-y-12">
-            <Card className="bg-white border-stone-200 p-6 sm:p-10 rounded-[1.5rem] sm:rounded-[2.5rem] flex flex-col justify-between h-full shadow-sm">
+            <Card className="bg-white border-stone-200 p-6 sm:p-10 rounded-3xl flex flex-col justify-between h-full shadow-sm">
               <div className="space-y-4 sm:space-y-6">
                 <div className="bg-brand-50 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center">
                   <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-brand-600" />
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">Verified & Secure, Everywhere</h3>
                 <p className="text-sm sm:text-lg text-stone-500 leading-relaxed font-medium">
-                  Every asset undergoes a 12-point AI verification process, ensuring legal compliance and ID-verified sellers. Payments are routed through licensed processors in each market — never held by this platform.
+                  Every listing goes through a 12-point verification process covering legal compliance and seller ID checks. Payments are routed through licensed processors in each market — never held by this platform.
                 </p>
               </div>
               <div className="space-y-4 sm:space-y-6 pt-4 sm:pt-0">
@@ -1842,24 +1982,24 @@ const Dashboard = () => {
               <p className="micro-label text-brand-600">Verified Listings Across {COUNTRIES.length} Countries</p>
             </div>
             <div className="w-full lg:w-auto overflow-x-auto scrollbar-none pb-2">
-              <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-[2rem] border border-stone-200 flex w-max lg:w-auto">
-                <TabsTrigger value="browse" className="rounded-xl md:rounded-[1.5rem] px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+              <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-3xl border border-stone-200 flex w-max lg:w-auto">
+                <TabsTrigger value="browse" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                   Explore
                 </TabsTrigger>
-                <TabsTrigger value="market" className="rounded-xl md:rounded-[1.5rem] px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                <TabsTrigger value="market" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                   Market Data
                 </TabsTrigger>
                 {user && (
-                  <TabsTrigger value="portfolio" className="rounded-xl md:rounded-[1.5rem] px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                  <TabsTrigger value="portfolio" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                     Portfolio
                   </TabsTrigger>
                 )}
                 {profile?.role === 'developer' && (
-                  <TabsTrigger value="inventory" className="rounded-xl md:rounded-[1.5rem] px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                  <TabsTrigger value="inventory" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                     Inventory
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="resale" className="rounded-xl md:rounded-[1.5rem] px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                <TabsTrigger value="resale" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                   Resale
                 </TabsTrigger>
               </TabsList>
@@ -2077,7 +2217,7 @@ const Dashboard = () => {
                 )}
 
                 {filteredProjects.length === 0 ? (
-                  <div className="text-center py-20 bg-stone-50 border border-dashed rounded-[2rem] p-6 max-w-lg mx-auto">
+                  <div className="text-center py-20 bg-stone-50 border border-dashed rounded-3xl p-6 max-w-lg mx-auto">
                     <FileSearch className="w-12 h-12 text-stone-400 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-stone-800">No Matched Properties</h3>
                     <p className="text-sm text-stone-500 mt-2">Try softening your filter coordinates or select another geographic market segment.</p>
@@ -2112,7 +2252,7 @@ const Dashboard = () => {
                     </div>
 
                     {/* Right: sticky interactive map */}
-                    <div className="lg:col-span-3 h-[420px] lg:h-[780px] lg:sticky lg:top-24 rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden border border-stone-200 shadow-sm">
+                    <div className="lg:col-span-3 h-[420px] lg:h-[780px] lg:sticky lg:top-24 rounded-3xl overflow-hidden border border-stone-200 shadow-sm">
                       <MapView
                         pins={filteredProjects
                           .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
@@ -2155,7 +2295,7 @@ const Dashboard = () => {
                   />
                 ))}
               <div onClick={() => setIsLaunchOpen(true)}>
-                <Card className="h-full border-dashed border-2 border-stone-200 bg-stone-50 rounded-[1.5rem] sm:rounded-[2.5rem] flex flex-col items-center justify-center p-10 sm:p-20 text-center cursor-pointer hover:border-brand-600 hover:bg-brand-50 transition-all group">
+                <Card className="h-full border-dashed border-2 border-stone-200 bg-stone-50 rounded-3xl flex flex-col items-center justify-center p-10 sm:p-20 text-center cursor-pointer hover:border-brand-600 hover:bg-brand-50 transition-all group">
                   <div className="bg-brand-100 p-5 sm:p-8 rounded-full mb-4 sm:mb-8 group-hover:bg-brand-600 group-hover:scale-110 transition-all">
                     <Plus className="w-8 sm:w-14 h-8 sm:h-14 text-brand-600 group-hover:text-white" />
                   </div>
@@ -2172,18 +2312,18 @@ const Dashboard = () => {
                 <InvestmentTracker key={inv.id} investment={inv} onRelist={handleRelist} onPay={handlePayment} />
               ))}
               {investments.length === 0 && (
-                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-[1.5rem] sm:rounded-[3rem] border-stone-100 p-6 sm:p-12">
+                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-3xl border-stone-100 p-6 sm:p-12">
                   <div className="bg-brand-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8">
                     <Wallet className="w-8 h-8 sm:w-12 sm:h-12 text-brand-600" />
                   </div>
-                  <h3 className="luxury-heading text-2xl sm:text-4xl text-stone-900">No Assets Found</h3>
-                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 max-w-md mx-auto font-medium">Your verified real estate portfolio will be displayed here once you initialize your first investment.</p>
-                  <Button 
+                  <h3 className="font-bold tracking-tight text-2xl sm:text-4xl text-stone-900">No Investments Yet</h3>
+                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 max-w-md mx-auto font-medium">Your portfolio will show up here once you make your first investment.</p>
+                  <Button
                     onClick={() => scrollToSection('catalog')}
-                    variant="outline" 
+                    variant="outline"
                     className="mt-6 sm:mt-10 border-stone-200 text-stone-900 hover:bg-stone-50 rounded-full px-8 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm font-bold"
                   >
-                    Begin Exploration
+                    Browse Properties
                   </Button>
                 </div>
               )}
@@ -2196,12 +2336,12 @@ const Dashboard = () => {
                 <ResaleListing key={unit.id} unit={unit} onBid={handleAction} />
               ))}
               {resaleUnits.length === 0 && (
-                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-[1.5rem] sm:rounded-[3rem] border-stone-100 p-6 sm:p-12">
+                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-3xl border-stone-100 p-6 sm:p-12">
                   <div className="bg-brand-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8">
                     <Gavel className="w-8 h-8 sm:w-12 sm:h-12 text-brand-600" />
                   </div>
-                  <h3 className="luxury-heading text-2xl sm:text-4xl text-stone-900">Market Stabilized</h3>
-                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 font-medium">There are currently no assets listed for resale in this region.</p>
+                  <h3 className="font-bold tracking-tight text-2xl sm:text-4xl text-stone-900">No Resale Listings</h3>
+                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 font-medium">There are currently no properties listed for resale in this region.</p>
                 </div>
               )}
             </div>
@@ -2213,7 +2353,7 @@ const Dashboard = () => {
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && handleCloseProjectDetail()}>
         <DialogContent 
           onClose={() => handleCloseProjectDetail()}
-          className="max-w-6xl max-h-[92vh] overflow-hidden flex flex-col p-0 bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[3rem] shadow-2xl"
+          className="max-w-6xl max-h-[92vh] overflow-hidden flex flex-col p-0 bg-white border-stone-200 rounded-3xl shadow-2xl"
         >
           {selectedProject && (
             <>
@@ -2251,7 +2391,7 @@ const Dashboard = () => {
                       <span className="flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5 text-brand-400" /> {selectedProject.totalUnits} Smart Units</span>
                     </div>
                   </div>
-                  <div className="text-left md:text-right bg-stone-950/70 backdrop-blur-xl p-4 sm:p-6 rounded-xl sm:rounded-[2rem] border border-white/10 shadow-2xl w-full md:w-auto shrink-0">
+                  <div className="text-left md:text-right bg-stone-950/70 backdrop-blur-xl p-4 sm:p-6 rounded-xl sm:rounded-3xl border border-white/10 shadow-2xl w-full md:w-auto shrink-0">
                     <p className="micro-label text-white/50 text-[9px] sm:text-[10px] mb-1">{selectedProject.listingType === 'rent' ? 'Monthly Rent' : 'Starting Price Tag'}</p>
                     <p className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tighter">
                       {priceLabel(selectedProject.basePrice, selectedProject.currency, selectedProject.listingType)}
@@ -2445,7 +2585,7 @@ const Dashboard = () => {
 
                   <div className="space-y-6 sm:space-y-8">
                     {/* Verified Seller Card */}
-                    <Card className="bg-white border-stone-200 rounded-2xl sm:rounded-[2rem] shadow-sm p-6 space-y-4">
+                    <Card className="bg-white border-stone-200 rounded-2xl sm:rounded-3xl shadow-sm p-6 space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-lg shrink-0">
                           {(selectedProject.developerName || 'S')[0]}
@@ -2474,7 +2614,7 @@ const Dashboard = () => {
                     </Card>
 
                     {/* Key ROI / Yield Card */}
-                    <Card className="bg-emerald-50/65 border-emerald-100 rounded-2xl sm:rounded-[2rem] shadow-sm p-6 space-y-4">
+                    <Card className="bg-emerald-50/65 border-emerald-100 rounded-2xl sm:rounded-3xl shadow-sm p-6 space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] sm:text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Yield Analytics</span>
                         <Badge className="bg-emerald-650 text-white font-bold border-none text-[10px]">Prime Growth</Badge>
@@ -2488,7 +2628,7 @@ const Dashboard = () => {
                       </p>
                     </Card>
 
-                    <Card className="bg-stone-50 border-stone-200 relative overflow-hidden rounded-2xl sm:rounded-[2rem] shadow-sm">
+                    <Card className="bg-stone-50 border-stone-200 relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-sm">
                       <div className="absolute top-0 right-0 p-4 sm:p-6">
                         <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-brand-600 opacity-20" />
                       </div>
@@ -2521,7 +2661,7 @@ const Dashboard = () => {
                     {/* Contact Agent */}
                     <Button
                       onClick={() => openWhatsApp(`Hi! I'm interested in ${selectedProject.name} (${selectedProject.location}). ${selectedProject.listingType === 'rent' ? 'Rent' : 'Price'}: ${priceLabel(selectedProject.basePrice, selectedProject.currency, selectedProject.listingType)}. Please share details and arrange a site visit. ${window.location.origin}/property/${selectedProject.id}`)}
-                      className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-[1.5rem] py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all"
+                      className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-3xl py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all"
                     >
                       <WhatsAppIcon className="w-4 h-4 mr-2" />
                       Contact Agent on WhatsApp
@@ -2529,7 +2669,7 @@ const Dashboard = () => {
                     <a href={`tel:${AGENT_PHONE.replace(/\s/g, '')}`} className="block">
                       <Button
                         variant="outline"
-                        className="w-full border-stone-300 text-stone-900 hover:bg-stone-50 font-bold rounded-xl sm:rounded-[1.5rem] py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest transition-all"
+                        className="w-full border-stone-300 text-stone-900 hover:bg-stone-50 font-bold rounded-xl sm:rounded-3xl py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest transition-all"
                       >
                         Call Agent • {AGENT_PHONE}
                       </Button>
@@ -2537,7 +2677,7 @@ const Dashboard = () => {
 
                     <Button
                       onClick={() => setIsWhitepaperOpen(true)}
-                      className="w-full bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl sm:rounded-[1.5rem] py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all"
+                      className="w-full bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl sm:rounded-3xl py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all"
                     >
                       <FileText className="w-4 h-4 mr-2" />
                       Property & Process Details
@@ -2554,7 +2694,7 @@ const Dashboard = () => {
       <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
         <DialogContent 
           onClose={() => setIsBookingOpen(false)}
-          className="sm:max-w-lg bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl"
+          className="sm:max-w-lg bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
         >
           <DialogHeader className="space-y-2 sm:space-y-4">
             <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">Reserve This Unit</DialogTitle>
@@ -2572,7 +2712,7 @@ const Dashboard = () => {
                 <Button 
                   key={plan.type}
                   variant="outline" 
-                  className="h-20 sm:h-24 flex items-center justify-start gap-4 sm:gap-6 border-stone-100 bg-stone-50 hover:border-brand-600 hover:bg-brand-50 transition-all group px-4 sm:px-8 rounded-[1.25rem] sm:rounded-3xl"
+                  className="h-20 sm:h-24 flex items-center justify-start gap-4 sm:gap-6 border-stone-100 bg-stone-50 hover:border-brand-600 hover:bg-brand-50 transition-all group px-4 sm:px-8 rounded-2xl sm:rounded-3xl"
                   onClick={() => confirmBooking(plan.type as any)}
                 >
                   <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${plan.bg} flex items-center justify-center group-hover:bg-white transition-colors shadow-sm shrink-0`}>
@@ -2596,7 +2736,7 @@ const Dashboard = () => {
       <Dialog open={isRelistingOpen} onOpenChange={setIsRelistingOpen}>
         <DialogContent 
           onClose={() => setIsRelistingOpen(false)}
-          className="sm:max-w-lg bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl"
+          className="sm:max-w-lg bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
         >
           <DialogHeader className="space-y-4">
             <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-3 sm:gap-4">
@@ -2621,7 +2761,7 @@ const Dashboard = () => {
                 className="bg-stone-50 border-stone-100 text-stone-900 text-lg sm:text-2xl h-12 sm:h-16 rounded-xl sm:rounded-2xl focus:border-indigo-600 font-bold px-4 sm:px-6"
               />
             </div>
-            <div className="bg-stone-50 p-5 sm:p-8 rounded-[1.25rem] sm:rounded-[2rem] space-y-3 sm:space-y-4 border border-stone-100">
+            <div className="bg-stone-50 p-5 sm:p-8 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-4 border border-stone-100">
               <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold uppercase tracking-widest">
                 <span className="text-stone-400">ESTIMATED PROFIT</span>
                 <span className="text-emerald-600">
@@ -2636,7 +2776,7 @@ const Dashboard = () => {
           </div>
           <Button 
             onClick={confirmRelisting}
-            className="w-full bg-indigo-600 text-white hover:bg-stone-900 font-bold py-5 sm:py-10 rounded-xl sm:rounded-[1.5rem] text-sm sm:text-xl shadow-xl shadow-indigo-100"
+            className="w-full bg-indigo-600 text-white hover:bg-stone-900 font-bold py-5 sm:py-10 rounded-xl sm:rounded-3xl text-sm sm:text-xl shadow-xl shadow-indigo-100"
           >
             Confirm Market Listing
           </Button>
@@ -2647,7 +2787,7 @@ const Dashboard = () => {
       <Dialog open={isBiddingOpen} onOpenChange={setIsBiddingOpen}>
         <DialogContent 
           onClose={() => setIsBiddingOpen(false)}
-          className="sm:max-w-lg bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl"
+          className="sm:max-w-lg bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
         >
           <DialogHeader className="space-y-4">
             <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-3 sm:gap-4">
@@ -2672,7 +2812,7 @@ const Dashboard = () => {
                 className="bg-stone-50 border-stone-100 text-stone-900 text-lg sm:text-2xl h-12 sm:h-16 rounded-xl sm:rounded-2xl focus:border-brand-600 font-bold px-4 sm:px-6"
               />
             </div>
-            <div className="bg-stone-50 p-5 sm:p-8 rounded-[1.25rem] sm:rounded-[2rem] space-y-3 sm:space-y-4 border border-stone-100">
+            <div className="bg-stone-50 p-5 sm:p-8 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-4 border border-stone-100">
               <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold uppercase tracking-widest">
                 <span className="text-stone-400">MINIMUM INCREMENT</span>
                 <span className="text-stone-900">{selectedUnit ? formatPriceFull(Math.round(selectedUnit.price * 0.02), selectedUnit.currency) : ''}</span>
@@ -2685,7 +2825,7 @@ const Dashboard = () => {
           </div>
           <Button 
             onClick={placeBid}
-            className="w-full bg-brand-600 text-white hover:bg-stone-900 font-bold py-5 sm:py-10 rounded-xl sm:rounded-[1.5rem] text-sm sm:text-xl shadow-xl shadow-brand-100"
+            className="w-full bg-brand-600 text-white hover:bg-stone-900 font-bold py-5 sm:py-10 rounded-xl sm:rounded-3xl text-sm sm:text-xl shadow-xl shadow-brand-100"
           >
             Confirm Bid
           </Button>
@@ -2695,10 +2835,10 @@ const Dashboard = () => {
       <Dialog open={isLaunchOpen} onOpenChange={setIsLaunchOpen}>
         <DialogContent 
           onClose={() => setIsLaunchOpen(false)}
-          className="sm:max-w-2xl bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl"
+          className="sm:max-w-2xl bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
         >
           <DialogHeader className="space-y-2 sm:space-y-4">
-            <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">Launch New Asset</DialogTitle>
+            <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">List a New Property</DialogTitle>
             <DialogDescription className="text-stone-500 text-sm sm:text-base font-medium">
               List a new property anywhere in the world. New listings show as "Pending Review" until our team verifies documentation.
             </DialogDescription>
@@ -2791,7 +2931,7 @@ const Dashboard = () => {
       <Dialog open={isEvaluateOpen} onOpenChange={setIsEvaluateOpen}>
         <DialogContent
           onClose={() => setIsEvaluateOpen(false)}
-          className="sm:max-w-lg bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl"
+          className="sm:max-w-lg bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
         >
           <DialogHeader className="space-y-2 sm:space-y-4">
             <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">Estimate Your Property's Value</DialogTitle>
@@ -2880,12 +3020,12 @@ const Dashboard = () => {
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent 
           onClose={() => setIsProfileOpen(false)}
-          className="sm:max-w-xl bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl"
+          className="sm:max-w-xl bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
         >
           <DialogHeader className="space-y-2 sm:space-y-4">
-            <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">Identity Intelligence</DialogTitle>
+            <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">My Profile</DialogTitle>
             <DialogDescription className="text-stone-500 text-sm sm:text-base font-medium">
-              Manage your institutional profile and sandbox options.
+              Manage your profile and account type.
             </DialogDescription>
           </DialogHeader>
           <div className="py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -2902,7 +3042,7 @@ const Dashboard = () => {
 
             {/* Role Switcher Selector */}
             <div className="space-y-3 sm:space-y-4">
-              <Label className="micro-label text-stone-400">Select Sandbox Role</Label>
+              <Label className="micro-label text-stone-400">Account Type</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => setProfileRole("investor")}
@@ -2963,7 +3103,7 @@ const Dashboard = () => {
       <Dialog open={isWhitepaperOpen} onOpenChange={setIsWhitepaperOpen}>
         <DialogContent 
           onClose={() => setIsWhitepaperOpen(false)}
-          className="sm:max-w-2xl bg-white border-stone-200 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl"
+          className="sm:max-w-2xl bg-white border-stone-200 rounded-3xl p-6 sm:p-10 shadow-2xl"
         >
           <DialogHeader className="space-y-2 sm:space-y-4">
             <DialogTitle className="text-stone-900 text-2xl sm:text-3xl font-bold tracking-tight">Property & Process Details</DialogTitle>
