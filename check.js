@@ -1,0 +1,21 @@
+const puppeteer = require('puppeteer');
+(async () => {
+  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1440, height: 1000 });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('PAGEERROR: ' + e.message));
+  page.on('console', (msg) => { if (msg.type() === 'error') errors.push('CONSOLE ERROR: ' + msg.text()); });
+  await page.goto('http://127.0.0.1:4174/', { waitUntil: 'networkidle0', timeout: 30000 });
+  await new Promise(r => setTimeout(r, 2500));
+  await page.screenshot({ path: '/tmp/home_top.png' });
+  await page.evaluate(() => window.scrollBy(0, 1400));
+  await new Promise(r => setTimeout(r, 1200));
+  await page.screenshot({ path: '/tmp/home_mid.png' });
+  await page.evaluate(() => window.scrollBy(0, 1600));
+  await new Promise(r => setTimeout(r, 1200));
+  await page.screenshot({ path: '/tmp/home_mid2.png' });
+  console.log('ERRORS_FOUND:', errors.length);
+  errors.forEach(e => console.log(e));
+  await browser.close();
+})();

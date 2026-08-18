@@ -265,6 +265,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 // --- Agent contact configuration (EDIT: put your WhatsApp number here, country code, no + or spaces) ---
 const AGENT_WHATSAPP = '919999999999';
 const AGENT_PHONE = '+91 99999 99999';
+const SUPPORT_EMAIL = 'infoatjgdeveloper@gmail.com';
 
 const openWhatsApp = (message: string) => {
   window.open(`https://wa.me/${AGENT_WHATSAPP}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
@@ -1433,7 +1434,8 @@ const Dashboard = () => {
   const [isLaunchOpen, setIsLaunchOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isWhitepaperOpen, setIsWhitepaperOpen] = useState(false);
-  
+  const [infoModal, setInfoModal] = useState<'about' | 'careers' | 'contact' | 'terms' | 'privacy' | 'disclaimer' | null>(null);
+
   // --- Zillow & 99acres style Filter Center states ---
   const [searchQuery, setSearchQuery] = useState("");
   const [budgetRange, setBudgetRange] = useState<string>("All"); // USD-equivalent tiers, works across all currencies
@@ -4091,6 +4093,72 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Info modal — About / Careers / Contact / Terms / Privacy / Disclaimer.
+          These footer links previously went nowhere (href="#"); now they open
+          real, honest copy instead of dead anchors. */}
+      <Dialog open={infoModal !== null} onOpenChange={(open) => !open && setInfoModal(null)}>
+        <DialogContent className="max-w-lg sm:rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-serif">
+              {infoModal === 'about' && 'About JG Estate'}
+              {infoModal === 'careers' && 'Careers'}
+              {infoModal === 'contact' && 'Contact Us'}
+              {infoModal === 'terms' && 'Terms of Use'}
+              {infoModal === 'privacy' && 'Privacy Policy'}
+              {infoModal === 'disclaimer' && 'Disclaimer'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 sm:py-6 space-y-4 text-sm text-stone-600 leading-relaxed max-h-[60vh] overflow-y-auto">
+            {infoModal === 'about' && (
+              <>
+                <p>JG Estate is a global real estate marketplace where buyers, renters, agents, developers, and investors can browse and transact on verified property listings across {COUNTRIES.length} countries, priced in local currency with live market data.</p>
+                <p>Every listing is tied to a real developer or agent, and construction status, RERA/registry references, and pricing are shown as reported by the listing party. Actual payments, escrow, and closing are always handled by licensed third-party providers in the property's jurisdiction — never by this platform directly.</p>
+              </>
+            )}
+            {infoModal === 'careers' && (
+              <p>We don't have open roles listed on the platform yet. If you're interested in working with JG Estate, reach out at{' '}
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-brand-600 hover:underline">{SUPPORT_EMAIL}</a> and we'll follow up as opportunities open.
+              </p>
+            )}
+            {infoModal === 'contact' && (
+              <div className="space-y-3">
+                <p>We're happy to help with anything from a specific listing to a general question about how the platform works.</p>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-2 font-bold text-stone-900 hover:text-brand-600"><Mail className="w-4 h-4" />{SUPPORT_EMAIL}</a>
+                <a href={`tel:${AGENT_PHONE.replace(/\s/g, '')}`} className="flex items-center gap-2 font-bold text-stone-900 hover:text-brand-600"><Phone className="w-4 h-4" />{AGENT_PHONE}</a>
+                <button
+                  onClick={() => { setInfoModal(null); openWhatsApp("Hi! I'd like to get in touch with JG Estate."); }}
+                  className="flex items-center gap-2 font-bold text-stone-900 hover:text-brand-600"
+                ><MessageCircle className="w-4 h-4" />Chat with us on WhatsApp</button>
+              </div>
+            )}
+            {infoModal === 'terms' && (
+              <>
+                <p>By using JG Estate you agree to use the platform only to browse, list, or express genuine interest in real property. Listing accuracy is the responsibility of the developer or agent who submitted it — JG Estate reviews but does not independently guarantee every detail.</p>
+                <p>Reservation deposits and other on-platform actions record your interest; they are not a substitute for a formal sale agreement, and all binding contracts, payments, and closings must go through a licensed notary, attorney, or payment processor in the relevant jurisdiction.</p>
+              </>
+            )}
+            {infoModal === 'privacy' && (
+              <>
+                <p>We collect the account information you provide (name, email) and the activity needed to run the platform — saved properties, bids, bookings, and messages to agents or developers you contact.</p>
+                <p>We don't sell your personal data. Information is shared only with the specific agent, developer, or advisor you choose to contact, and with the third-party payment or authentication providers (e.g. Google Sign-In) required to operate the service.</p>
+              </>
+            )}
+            {infoModal === 'disclaimer' && (
+              <>
+                <p>Listings on JG Estate are shown as reported by developers and agents and may change without notice. Prices, availability, construction status, and rental yields are estimates and should be independently verified before making any financial decision.</p>
+                <p>JG Estate is not a licensed broker, bank, or payment processor. It does not hold client funds in escrow, provide investment or legal advice, or guarantee any transaction — always work with a licensed professional for the actual purchase, sale, or financing of property.</p>
+              </>
+            )}
+          </div>
+          <Button
+            onClick={() => setInfoModal(null)}
+            className="w-full bg-stone-900 text-white hover:bg-brand-600 font-bold py-5 sm:py-6 rounded-xl text-base shadow-xl"
+          >
+            Close
+          </Button>
+        </DialogContent>
+      </Dialog>
+
       {/* Footer */}
       <footer className="mt-24 sm:mt-40 bg-white">
         {/* Thin brand accent bar — a signature strip rather than a plain border */}
@@ -4120,16 +4188,16 @@ const Dashboard = () => {
           <div className="space-y-3">
             <p className="micro-label text-stone-400">Support</p>
             <button onClick={() => openWhatsApp("Hi! I'd like to speak with a JG Estate advisor.")} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Talk to an Advisor</button>
-            <a href="#" className="block text-sm font-semibold text-stone-600 hover:text-brand-600">About</a>
-            <a href="#" className="block text-sm font-semibold text-stone-600 hover:text-brand-600">Careers</a>
-            <a href="#" className="block text-sm font-semibold text-stone-600 hover:text-brand-600">Contact</a>
+            <button onClick={() => setInfoModal('about')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">About</button>
+            <button onClick={() => setInfoModal('careers')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Careers</button>
+            <button onClick={() => setInfoModal('contact')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Contact</button>
           </div>
 
           <div className="space-y-3">
             <p className="micro-label text-stone-400">Legal</p>
-            <a href="#" className="block text-sm font-semibold text-stone-600 hover:text-brand-600">Terms of Use</a>
-            <a href="#" className="block text-sm font-semibold text-stone-600 hover:text-brand-600">Privacy Policy</a>
-            <a href="#" className="block text-sm font-semibold text-stone-600 hover:text-brand-600">Disclaimer</a>
+            <button onClick={() => setInfoModal('terms')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Terms of Use</button>
+            <button onClick={() => setInfoModal('privacy')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Privacy Policy</button>
+            <button onClick={() => setInfoModal('disclaimer')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Disclaimer</button>
           </div>
         </div>
 
