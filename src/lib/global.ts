@@ -493,6 +493,54 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
     amenities: ['Landscaped Podium Garden', 'Clubhouse', 'Multipurpose Hall', 'Kids\' Play Area'],
     landmarks: [{ name: 'SP Ring Road', distance: '5 mins' }, { name: 'Bopal-Ghuma Road', distance: '2 mins' }],
   },
+  // --- Maharashtra / Mumbai, India — additional real, web-verified developers ---
+  {
+    name: 'Three Sixty West', description: 'Oberoi Realty\'s ultra-luxury waterfront twin towers in Worli, one of Mumbai\'s most recognized skyline landmarks.',
+    location: 'Worli, Mumbai', city: 'Mumbai', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
+    totalUnits: 60, basePrice: 90000000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Oberoi Realty',
+    verified: true, marketTrend: 'Bullish', bhkOptions: ['4 BR', 'Penthouse'], areaRange: '3,200 - 7,600 sqft',
+    constructionStatus: 'Ready to Move', rentalYield: 3.2, aiScore: 96,
+    amenities: ['Private Cinema', 'Racquetball & Squash Court', 'Sky Lounge', 'Sea-Facing Deck'],
+    landmarks: [{ name: 'Worli Sea Face', distance: '2 mins' }, { name: 'Bandra-Worli Sea Link', distance: '5 mins' }],
+  },
+  {
+    name: 'Hiranandani Gardens', description: 'A landmark self-contained planned township in Powai by Hiranandani Group, with lakeside promenades, schools, and retail woven into the residential precincts.',
+    location: 'Powai, Mumbai', city: 'Mumbai', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
+    totalUnits: 140, basePrice: 32000000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Hiranandani Group',
+    verified: true, marketTrend: 'Stable', bhkOptions: ['2 BR', '3 BR', '4 BR'], areaRange: '1,400 - 3,600 sqft',
+    constructionStatus: 'Ready to Move', rentalYield: 3.9, aiScore: 93,
+    amenities: ['Powai Lake Promenade', 'Landscaped Township', 'Clubhouse', 'On-Site Schools'],
+    landmarks: [{ name: 'Powai Lake', distance: '3 mins' }, { name: 'Hiranandani Business Park', distance: '6 mins' }],
+  },
+  // --- Karnataka / Bengaluru, India — additional real, web-verified developers ---
+  {
+    name: 'Sobha Dream Acres', description: 'A large gated residential community by Sobha Limited in the Panathur-Whitefield IT corridor, known for Sobha\'s in-house construction quality standards.',
+    location: 'Panathur, Bengaluru', city: 'Bengaluru', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
+    totalUnits: 150, basePrice: 12500000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Sobha Limited',
+    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '650 - 1,650 sqft',
+    constructionStatus: 'Ready to Move', rentalYield: 4.6, aiScore: 90,
+    amenities: ['Clubhouse', 'Multiple Swimming Pools', 'Sports Arena', 'Landscaped Gardens'],
+    landmarks: [{ name: 'Panathur Main Road', distance: '2 mins' }, { name: 'Whitefield IT Corridor', distance: '10 mins' }],
+  },
+  {
+    name: 'Brigade Cornerstone Utopia', description: 'A large integrated residential enclave in Whitefield by Brigade Group, one of Bengaluru\'s established developers.',
+    location: 'Whitefield, Bengaluru', city: 'Bengaluru', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
+    totalUnits: 130, basePrice: 9800000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Brigade Group',
+    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '1,150 - 2,050 sqft',
+    constructionStatus: 'Under Construction', rentalYield: 4.4, aiScore: 91,
+    amenities: ['Central Clubhouse', 'Amphitheatre', 'Jogging Trails', 'Multi-Sport Courts'],
+    landmarks: [{ name: 'ITPL Whitefield', distance: '8 mins' }, { name: 'Whitefield Metro', distance: '6 mins' }],
+  },
+  // --- Dubai, UAE — additional real, web-verified developer ---
+  {
+    name: 'Emaar Beachfront', description: 'A private-island waterfront district between Dubai Marina and Palm Jumeirah, developed by Emaar Properties — one of Dubai\'s most established master developers.',
+    location: 'Emaar Beachfront, Dubai', city: 'Dubai', country: 'UAE', countryCode: 'AE', currency: 'AED', region: 'Middle East',
+    totalUnits: 100, basePrice: 3800000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Emaar Properties',
+    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '750 - 2,200 sqft',
+    constructionStatus: 'Under Construction', rentalYield: 6.2, aiScore: 93,
+    amenities: ['Private Beach Access', 'Marina Promenade', 'Infinity Pool', 'Beach Club'],
+    landmarks: [{ name: 'Dubai Marina', distance: '5 mins' }, { name: 'Palm Jumeirah', distance: '7 mins' }],
+  },
 ];
 
 // A handful of listings double as "for rent" — monthly rent figures (not sale price), spread

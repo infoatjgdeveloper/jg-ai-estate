@@ -1596,13 +1596,14 @@ const Dashboard = () => {
   // The catalog above originally shipped with a mix of real (e.g. Lodha Group, Prestige
   // Group) and placeholder/fictional developer names (e.g. "Berlin Urban Living"). Those
   // placeholders have since been replaced with real, web-verified development companies in
-  // global.ts, and 3 real Ahmedabad/Gujarat projects were added. Because seedData() above
-  // only writes when the collection is empty, a live Firestore instance that was already
-  // seeded won't pick up those source changes on its own — this migration patches it in
-  // place: it renames any already-seeded project's developerName from the old placeholder to
-  // the real one, and adds any newly-introduced seed projects (matched by name) that aren't
-  // in the live collection yet. Runs once per session for any signed-in user, same trigger
-  // model as seedData().
+  // global.ts, and new real projects (Ahmedabad, additional Mumbai/Bengaluru/Dubai entries,
+  // and more to come market-by-market) were appended to GLOBAL_SEED_PROJECTS over time.
+  // Because seedData() above only writes when the collection is empty, a live Firestore
+  // instance that was already seeded won't pick up those source changes on its own — this
+  // migration patches it in place: it renames any already-seeded project's developerName
+  // from the old placeholder to the real one, and adds any seed project (matched by name)
+  // that isn't in the live collection yet, regardless of city. Runs once per session for any
+  // signed-in user, same trigger model as seedData().
   const migrateRealBuilderData = useCallback(async () => {
     const projectsSnap = await getDocs(collection(db, 'projects'));
     if (projectsSnap.empty) return; // nothing to migrate yet — seedData will write the current (already-real) names
@@ -1621,7 +1622,7 @@ const Dashboard = () => {
     }
 
     for (const p of GLOBAL_SEED_PROJECTS) {
-      if (p.city === 'Ahmedabad' && !existingNames.has(p.name)) {
+      if (!existingNames.has(p.name)) {
         stageProjectOnBatch(batch, p);
         hasWrites = true;
       }
