@@ -262,13 +262,14 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 // --- Components ---
 
-// --- Agent contact configuration (EDIT: put your WhatsApp number here, country code, no + or spaces) ---
-const AGENT_WHATSAPP = '919999999999';
+// --- Agent contact configuration ---
 const AGENT_PHONE = '+91 99999 99999';
 const SUPPORT_EMAIL = 'infoatjgdeveloper@gmail.com';
 
-const openWhatsApp = (message: string) => {
-  window.open(`https://wa.me/${AGENT_WHATSAPP}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+// Opens the user's mail client with a prefilled inquiry — the single "contact an
+// advisor" path used across the app (replaces the previous WhatsApp deep-links).
+const contactAdvisor = (message: string, subject = 'JG Estate Inquiry') => {
+  window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
 };
 
 // --- Listing agents (broker storefront) ---
@@ -282,18 +283,17 @@ interface AgentProfile {
   name: string;
   title: string;
   phone: string;
-  whatsapp: string;
   regions: string[];
   bio: string;
 }
 
 const AGENT_ROSTER: AgentProfile[] = [
-  { id: 'isabelle-hart', name: 'Isabelle Hart', title: 'Senior International Advisor', phone: '+44 20 7946 0958', whatsapp: '442079460958', regions: ['Europe'], bio: 'Twelve years advising cross-border buyers into prime European residential markets, from new-build launches to landmark restorations.' },
-  { id: 'marcus-chen', name: 'Marcus Chen', title: 'Luxury Sales Director', phone: '+1 212 555 0148', whatsapp: '12125550148', regions: ['North America'], bio: 'Focused on flagship developments across New York and Miami, with a track record in full-floor and penthouse transactions.' },
-  { id: 'amira-al-suwaidi', name: 'Amira Al Suwaidi', title: 'Senior Property Consultant', phone: '+971 4 555 0193', whatsapp: '97145550193', regions: ['Middle East'], bio: 'Specialist in branded residences and waterfront developments across Dubai, working closely with master developers on delivery timelines.' },
-  { id: 'rohan-mehta', name: 'Rohan Mehta', title: 'Principal Broker', phone: '+91 98200 55123', whatsapp: '919820055123', regions: ['Asia'], bio: 'RERA-registered broker covering Mumbai and Bengaluru\'s prime residential corridors, with deep developer relationships for early-phase access.' },
-  { id: 'sofia-almeida', name: 'Sofia Almeida', title: 'International Advisor', phone: '+351 21 555 0176', whatsapp: '351215550176', regions: ['Europe'], bio: 'Guides overseas buyers through Iberian and Southern European purchases end to end, from reservation to golden-visa paperwork.' },
-  { id: 'daniel-osei', name: 'Daniel Osei', title: 'Global Client Advisor', phone: '+1 305 555 0122', whatsapp: '13055550122', regions: ['North America', 'Global'], bio: 'Works with relocating and diaspora buyers across multiple markets, coordinating remote viewings and financing introductions.' },
+  { id: 'isabelle-hart', name: 'Isabelle Hart', title: 'Senior International Advisor', phone: '+44 20 7946 0958', regions: ['Europe'], bio: 'Twelve years advising cross-border buyers into prime European residential markets, from new-build launches to landmark restorations.' },
+  { id: 'marcus-chen', name: 'Marcus Chen', title: 'Luxury Sales Director', phone: '+1 212 555 0148', regions: ['North America'], bio: 'Focused on flagship developments across New York and Miami, with a track record in full-floor and penthouse transactions.' },
+  { id: 'amira-al-suwaidi', name: 'Amira Al Suwaidi', title: 'Senior Property Consultant', phone: '+971 4 555 0193', regions: ['Middle East'], bio: 'Specialist in branded residences and waterfront developments across Dubai, working closely with master developers on delivery timelines.' },
+  { id: 'rohan-mehta', name: 'Rohan Mehta', title: 'Principal Broker', phone: '+91 98200 55123', regions: ['Asia'], bio: 'RERA-registered broker covering Mumbai and Bengaluru\'s prime residential corridors, with deep developer relationships for early-phase access.' },
+  { id: 'sofia-almeida', name: 'Sofia Almeida', title: 'International Advisor', phone: '+351 21 555 0176', regions: ['Europe'], bio: 'Guides overseas buyers through Iberian and Southern European purchases end to end, from reservation to golden-visa paperwork.' },
+  { id: 'daniel-osei', name: 'Daniel Osei', title: 'Global Client Advisor', phone: '+1 305 555 0122', regions: ['North America', 'Global'], bio: 'Works with relocating and diaspora buyers across multiple markets, coordinating remote viewings and financing introductions.' },
 ];
 
 const hashProjectId = (id: string) => {
@@ -378,16 +378,10 @@ const heroItemVariants = {
 const priceLabel = (basePrice: number, currency: string, listingType?: string) =>
   listingType === 'rent' ? `${formatPrice(basePrice, currency)}/mo` : formatPrice(basePrice, currency);
 
-const WhatsAppIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.497.1-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-  </svg>
-);
-
 // --- AI Assistant (floating chat) ---
 // Rule-based, keyword-matched replies about how the marketplace actually works —
 // not a connected LLM (no backend/API key wired up for that), but a real, working
-// chat UI with a genuine escalation path to a human advisor on WhatsApp, rather
+// chat UI with a genuine escalation path to a human advisor by email, rather
 // than a chat window that fakes intelligence and dead-ends.
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -420,7 +414,7 @@ const getAssistantReply = (raw: string): string => {
     return "Browsing, saved searches and contacting an agent are always free for buyers and renters. Agents and builders get a free Starter plan, with paid plans for unlimited listings and priority placement.";
   }
   if (/human|real person|advisor|call me|talk to/.test(q)) {
-    return "Happy to connect you — tap \"Talk to a Human Advisor\" below and I'll hand you off on WhatsApp right away.";
+    return "Happy to connect you — tap \"Talk to a Human Advisor\" below and I'll open an email to a real advisor right away.";
   }
   return "I don't have a scripted answer for that one yet, but a human advisor can help — tap \"Talk to a Human Advisor\" below, or use the search bar to browse verified listings.";
 };
@@ -488,10 +482,10 @@ const FloatingAIChat = () => {
           </div>
           <div className="p-3 border-t border-stone-200 shrink-0 space-y-2">
             <button
-              onClick={() => openWhatsApp('Hi! I was chatting with the JG Estate AI assistant and would like to speak with a human advisor.')}
+              onClick={() => contactAdvisor('Hi! I was chatting with the JG Estate AI assistant and would like to speak with a human advisor.')}
               className="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-600 hover:text-brand-700 py-1.5"
             >
-              <WhatsAppIcon className="w-3.5 h-3.5" />
+              <Mail className="w-3.5 h-3.5" />
               Talk to a Human Advisor
             </button>
             <div className="flex items-center gap-2">
@@ -703,7 +697,7 @@ const Navbar = ({
                 <div className="px-3 py-2.5 text-xs text-stone-500 leading-relaxed">Interior design partners coming soon to select markets.</div>
               </NavDropdown>
               <NavDropdown label="Advisor">
-                <DropdownMenuItem onClick={onAdvisorClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">Chat with an Agent (WhatsApp)</DropdownMenuItem>
+                <DropdownMenuItem onClick={onAdvisorClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">Email an Agent</DropdownMenuItem>
                 <DropdownMenuItem onClick={onEvaluateClick} className="rounded-lg cursor-pointer py-2.5 px-3">Get a Valuation Estimate</DropdownMenuItem>
               </NavDropdown>
               <NavDropdown label="Invest">
@@ -873,150 +867,115 @@ const ProjectCard: React.FC<{
   const cStatus = project.constructionStatus || 'Ready to Move';
   const aiScore = project.aiScore || 85;
 
+  // Single priority badge — RERA > Verified > For Rent — instead of stacking several,
+  // which was one of the things making the old card feel cluttered.
+  const statusBadge = project.reraId
+    ? { label: 'RERA Verified', className: 'bg-brand-600 text-white' }
+    : project.verified
+    ? { label: 'Verified', className: 'bg-emerald-600 text-white' }
+    : project.listingType === 'rent'
+    ? { label: 'For Rent', className: 'bg-emerald-600 text-white' }
+    : null;
+
   return (
-    <div 
-      className="group cursor-pointer relative flex flex-col h-full focus-within:ring-2 focus-within:ring-brand-600 rounded-3xl"
+    <div
+      className="group cursor-pointer relative flex flex-col h-full focus-within:ring-2 focus-within:ring-brand-600 rounded-2xl"
       onClick={() => onSelect(project)}
     >
-      <Card className="overflow-hidden border-stone-200 bg-white rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full border hover:border-stone-300">
-        <div className="aspect-[16/11] relative overflow-hidden shrink-0">
-          <img 
-            src={project.imageUrl || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80`} 
+      <Card className="overflow-hidden border-stone-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full border hover:border-stone-300">
+        <div className="aspect-[4/3] relative overflow-hidden shrink-0">
+          <img
+            src={project.imageUrl || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80`}
             alt={project.name}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700"
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-900/95 via-stone-900/45 to-transparent" />
-          
-          {/* Top badging */}
-          <div className="absolute top-4 left-4 sm:top-6 sm:left-6 right-4 sm:right-6 flex justify-between items-start gap-2">
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
-              <Badge className="bg-white/95 backdrop-blur-xl text-brand-600 border-none px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md">
-                {project.city}
+
+          {/* Top badging — one status badge + compact save/compare icons */}
+          <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-start gap-2">
+            {statusBadge ? (
+              <Badge className={`${statusBadge.className} border-none px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm`}>
+                {statusBadge.label}
               </Badge>
-              {project.listingType === 'rent' && (
-                <Badge className="bg-emerald-600 text-white border-none px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md">
-                  For Rent
-                </Badge>
-              )}
-              {project.reraId ? (
-                <Badge className="bg-brand-600 text-white border-none px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md">
-                  RERA Verified
-                </Badge>
-              ) : project.verified ? (
-                <Badge className="bg-emerald-600 text-white border-none px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Verified
-                </Badge>
-              ) : null}
-            </div>
-            
-            <div className="flex items-center gap-2">
+            ) : <span />}
+
+            <div className="flex items-center gap-1.5">
               {onToggleCompare && (
                 <button
                   onClick={(e) => onToggleCompare(project.id, e)}
-                  className={`w-8 h-8 sm:w-10 sm:h-10 backdrop-blur-md rounded-full flex items-center justify-center transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-brand-400 ${
-                    isComparing ? 'bg-brand-600 text-white' : 'bg-white/20 text-white hover:bg-white/90 hover:text-brand-600'
+                  className={`w-7 h-7 backdrop-blur-md rounded-full flex items-center justify-center transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-400 ${
+                    isComparing ? 'bg-brand-600 text-white' : 'bg-white/70 text-stone-700 hover:bg-white hover:text-brand-600'
                   }`}
                   aria-label={isComparing ? "Remove from comparison" : "Add to comparison"}
                   title={isComparing ? "Remove from comparison" : "Add to comparison"}
                 >
-                  <SlidersHorizontal className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
                 </button>
               )}
               <button
                 onClick={(e) => onToggleFavorite(project.id, e)}
-                className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/90 text-white hover:text-red-500 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-red-400"
+                className="w-7 h-7 bg-white/70 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white text-stone-700 hover:text-red-500 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                 aria-label={isFavorite ? "Remove from saved" : "Save property"}
               >
-                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+                <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
               </button>
             </div>
           </div>
 
-          <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2 text-white/70">
-              {onViewPortfolio && project.developerName ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onViewPortfolio(project.developerName!); }}
-                  className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] hover:text-white hover:underline underline-offset-2 transition-colors focus:outline-none"
-                >
-                  {project.developerName}
-                </button>
-              ) : (
-                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">{project.developerName}</p>
-              )}
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-400" />
-              <p className="text-[10px] sm:text-xs font-semibold text-brand-300">{cStatus}</p>
-            </div>
-            <h3 className="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-tight tracking-tight line-clamp-1">{project.name}</h3>
+          {/* Price directly on the image, Zillow/99acres-style — the single most
+              important number, visible without reading the card body at all. */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-stone-900/85 to-transparent pt-6 pb-2.5 px-3">
+            <p className="text-white text-lg font-bold tracking-tight leading-none">
+              {priceLabel(project.basePrice, project.currency, project.listingType)}
+            </p>
           </div>
         </div>
-        
-        <CardContent className="p-5 sm:p-8 flex flex-col flex-1 justify-between gap-6">
-          {/* Main attributes row */}
-          <div className="grid grid-cols-2 gap-4 pb-4 border-b border-stone-100 shrink-0">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-stone-400">
-                <Building2 className="w-3.5 h-3.5" />
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">Configuration</span>
-              </div>
-              <p className="text-xs sm:text-sm font-bold text-stone-800 line-clamp-1">{bhks}</p>
-            </div>
-            
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-stone-400">
-                <Ruler className="w-3.5 h-3.5" />
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">Super Built-up Area</span>
-              </div>
-              <p className="text-xs sm:text-sm font-bold text-stone-800 line-clamp-1">{sizeRange}</p>
-            </div>
+
+        <CardContent className="p-3.5 flex flex-col flex-1 gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-stone-900 leading-snug line-clamp-1">{project.name}</h3>
+            <p className="text-xs text-stone-500 line-clamp-1">{project.city}, {project.country}</p>
           </div>
 
-          {/* Pricing & AI Score Row */}
-          <div className="flex justify-between items-end gap-2 my-1">
-            <div className="space-y-1">
-              <p className="micro-label text-[10px] sm:text-[11px] text-stone-400">{project.listingType === 'rent' ? 'Monthly Rent' : 'Starting Formats'}</p>
-              <p className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tighter">
-                {priceLabel(project.basePrice, project.currency, project.listingType)}
-              </p>
-            </div>
-            
-            <div className="text-right space-y-1">
-              <div className="flex items-center justify-end gap-1.5 text-stone-400">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">AI Quality Score</span>
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50/65 text-amber-700 border border-amber-100 rounded-full font-bold text-xs">
-                {aiScore}/100
-              </div>
-            </div>
+          {/* Single compact facts row — beds/config, area, status — replaces the old
+              two big labeled blocks that ate most of the card's height. */}
+          <div className="flex items-center gap-2.5 text-[11px] font-semibold text-stone-600 flex-wrap">
+            <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5 text-stone-400" />{bhks}</span>
+            <span className="text-stone-300">•</span>
+            <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5 text-stone-400" />{sizeRange}</span>
+            <span className="text-stone-300">•</span>
+            <span>{cStatus}</span>
           </div>
 
-          {/* Bottom Call to Actions */}
-          <div className="grid grid-cols-4 gap-2.5 pt-2 shrink-0">
-            <div className="col-span-2">
-              <Button className="w-full bg-stone-900 text-white hover:bg-brand-600 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition-all focus:ring-2 focus:ring-brand-400">
-                Explore Units
-                <ArrowUpRight className="ml-1 w-4 h-4" />
-              </Button>
-            </div>
-            <div className="col-span-1">
-              <Button
-                onClick={(e) => { e.stopPropagation(); openWhatsApp(`Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`); }}
-                className="w-full h-full bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-xl sm:rounded-2xl font-bold transition-all"
-                aria-label="Contact agent on WhatsApp"
+          <div className="flex items-center justify-between text-[11px] font-semibold text-stone-500">
+            {onViewPortfolio && project.developerName ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); onViewPortfolio(project.developerName!); }}
+                className="hover:text-brand-600 hover:underline underline-offset-2 line-clamp-1 text-left"
               >
-                <WhatsAppIcon className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="col-span-1">
-              <div className={`w-full h-full inline-flex items-center justify-center gap-1 rounded-xl sm:rounded-2xl border font-bold text-[10px] sm:text-xs ${
-                project.marketTrend === 'Bullish' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-              }`}>
-                {project.marketTrend === 'Bullish' ? <ArrowUp className="w-3 h-3" /> : <Activity className="w-3 h-3" />}
-                {project.marketTrend}
-              </div>
-            </div>
+                {project.developerName}
+              </button>
+            ) : (
+              <span className="line-clamp-1">{project.developerName}</span>
+            )}
+            <span className="flex items-center gap-1 shrink-0 text-amber-600" title="AI Quality Score">
+              <Sparkles className="w-3 h-3" />{aiScore}
+            </span>
+          </div>
+
+          {/* Bottom Call to Actions — one primary action, one icon-only secondary */}
+          <div className="flex items-center gap-2 pt-1 mt-auto shrink-0">
+            <Button className="flex-1 bg-stone-900 text-white hover:bg-brand-600 py-2.5 rounded-xl font-bold text-xs transition-all focus:ring-2 focus:ring-brand-400">
+              View Details
+              <ArrowUpRight className="ml-1 w-3.5 h-3.5" />
+            </Button>
+            <Button
+              onClick={(e) => { e.stopPropagation(); contactAdvisor(`Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`); }}
+              className="bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-xl font-bold px-3 py-2.5 transition-all shrink-0"
+              aria-label="Email agent"
+            >
+              <Mail className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -1083,11 +1042,11 @@ const ListingRow: React.FC<{
         <div className="flex items-end justify-between gap-2 pt-1">
           <p className="text-base sm:text-lg font-bold text-stone-900 tracking-tight">{priceLabel(project.basePrice, project.currency, project.listingType)}</p>
           <button
-            onClick={(e) => { e.stopPropagation(); openWhatsApp(`Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`); }}
-            className="w-8 h-8 shrink-0 bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-lg flex items-center justify-center transition-all"
-            aria-label="Contact agent on WhatsApp"
+            onClick={(e) => { e.stopPropagation(); contactAdvisor(`Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`); }}
+            className="w-8 h-8 shrink-0 bg-brand-600 text-white hover:bg-brand-700 rounded-lg flex items-center justify-center transition-all"
+            aria-label="Email agent"
           >
-            <WhatsAppIcon className="w-3.5 h-3.5" />
+            <Mail className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -1415,7 +1374,7 @@ const MarketDashboard: React.FC<{ onSelectCountry: (name: string) => void }> = (
 };
 
 const Dashboard = () => {
-  const { user, profile, openAuthModal } = useAuth();
+  const { user, profile, openAuthModal, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const routeParams = useParams<{ id?: string; countryName?: string; builderName?: string; agentId?: string }>();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -1545,7 +1504,10 @@ const Dashboard = () => {
       lng: p.lng,
       developerId: "system",
       developerName: p.developerName,
-      reraId: p.reraId,
+      // Firestore rejects `undefined` field values outright — most non-India projects
+      // have no RERA ID, so the field must be omitted entirely rather than set to
+      // undefined, or the whole batch.commit() throws and NOTHING gets written.
+      ...(p.reraId ? { reraId: p.reraId } : {}),
       verified: p.verified,
       aiValuation: Math.round(p.basePrice * 1.06),
       marketTrend: p.marketTrend,
@@ -1793,11 +1755,13 @@ const Dashboard = () => {
     try {
       const pRef = doc(collection(db, 'projects'));
       const countryMeta = COUNTRIES.find(c => c.name === newProject.country);
+      const { reraId: _draftReraId, ...newProjectRest } = newProject;
       const projectData = {
-        ...newProject,
+        ...newProjectRest,
         countryCode: countryMeta?.code || '',
         region: countryMeta?.region || 'Europe',
-        reraId: newProject.reraId || undefined,
+        // Firestore rejects explicit `undefined` values — only include reraId when set.
+        ...(newProject.reraId ? { reraId: newProject.reraId } : {}),
         verified: false, // manually launched listings start unverified until reviewed
         developerId: user.uid,
         developerName: user.displayName || 'Verified Developer',
@@ -1869,7 +1833,25 @@ const Dashboard = () => {
         region: profileRegion,
         updatedAt: serverTimestamp()
       }, { merge: true });
+      // The write above only touches Firestore — without this, the `profile` object
+      // held in AuthContext stays stale (it's only set once, on auth state change),
+      // so the role badge and role-gated tabs wouldn't visibly update until a reload.
+      await refreshProfile();
       setIsProfileOpen(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'users');
+    }
+  };
+
+  // Persists a role switch immediately (used by the homepage persona cards — "List a
+  // Property" / "Showcase a Project" — for a user who's already signed in), then
+  // refreshes the local profile so role-gated UI (e.g. the Developer "My Listings" tab)
+  // shows up right away instead of requiring a manual save in Profile Settings first.
+  const setUserRole = async (role: string) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'users', user.uid), { role, updatedAt: serverTimestamp() }, { merge: true });
+      await refreshProfile();
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'users');
     }
@@ -2066,7 +2048,7 @@ const Dashboard = () => {
         onSellClick={() => (user ? setIsLaunchOpen(true) : openAuthModal('signup'))}
         onEvaluateClick={() => setIsEvaluateOpen(true)}
         onInvestClick={() => scrollToSection('market')}
-        onAdvisorClick={() => openWhatsApp("Hi! I'd like to speak with a JG Estate advisor about buying, selling, or renting a property.")}
+        onAdvisorClick={() => contactAdvisor("Hi! I'd like to speak with a JG Estate advisor about buying, selling, or renting a property.")}
         onEmiClick={() => setIsEmiOpen(true)}
       />
       {/* Hero — full-bleed real-estate photography instead of the old flat white/gradient
@@ -2125,7 +2107,7 @@ const Dashboard = () => {
                     if (mode.key === 'buy' || mode.key === 'rent') {
                       setBrowseMode(mode.key);
                     } else {
-                      openWhatsApp(`Hi! I'm looking for ${mode.label.toLowerCase()} listings on JG Estate — can you help me get started?`);
+                      contactAdvisor(`Hi! I'm looking for ${mode.label.toLowerCase()} listings on JG Estate — can you help me get started?`);
                     }
                   }}
                   className={`px-4 sm:px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
@@ -2298,14 +2280,14 @@ const Dashboard = () => {
                 role: 'Real Estate Agents',
                 copy: 'List properties for free, reach global buyers, and manage every enquiry from one dashboard.',
                 cta: 'List a Property',
-                onClick: () => { setProfileRole('agent'); (user ? setIsLaunchOpen(true) : openAuthModal('signup')); },
+                onClick: () => { setProfileRole('agent'); (user ? (setUserRole('agent'), setIsLaunchOpen(true)) : openAuthModal('signup')); },
               },
               {
                 icon: HardHat,
                 role: 'Builders & Developers',
                 copy: 'Showcase entire projects, publish unit-level inventory, and track construction-stage sales in real time.',
                 cta: 'Showcase a Project',
-                onClick: () => { setProfileRole('developer'); (user ? setIsLaunchOpen(true) : openAuthModal('signup')); },
+                onClick: () => { setProfileRole('developer'); (user ? (setUserRole('developer'), setIsLaunchOpen(true)) : openAuthModal('signup')); },
               },
               {
                 icon: TrendingUp,
@@ -2463,7 +2445,7 @@ const Dashboard = () => {
               { icon: Coins, title: 'Zero Buyer Fees', copy: 'Browsing, saved searches and agent contact are always free, no paywalled listings.' },
               { icon: FileText, title: 'Legal & Documentation', copy: 'Cross-border ownership rules, title checks and contract review, coordinated for you.' },
               { icon: Landmark, title: 'Escrow-Backed Payments', copy: 'Funds route through licensed processors in each market, never held by this platform.' },
-              { icon: Clock, title: '24/7 Advisor Support', copy: 'WhatsApp a real advisor any time, in any of our 10 markets, no ticket queues.' },
+              { icon: Clock, title: '24/7 Advisor Support', copy: 'Email a real advisor any time, in any of our 10 markets, no ticket queues.' },
             ].map((item) => (
               <motion.div key={item.title} variants={staggerItem} className="text-center sm:text-left space-y-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 sm:p-6">
                 <div className="bg-brand-500/15 w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mx-auto sm:mx-0">
@@ -2494,7 +2476,7 @@ const Dashboard = () => {
             viewport={{ once: true, margin: '-80px' }}
           >
             {[
-              { name: 'Starter', price: 'Free', period: '', desc: 'For individual agents listing a handful of properties.', features: ['Up to 5 active listings', 'Standard search placement', 'WhatsApp buyer enquiries', 'Basic market data access'], cta: 'Start Free', highlight: false },
+              { name: 'Starter', price: 'Free', period: '', desc: 'For individual agents listing a handful of properties.', features: ['Up to 5 active listings', 'Standard search placement', 'Direct buyer enquiries', 'Basic market data access'], cta: 'Start Free', highlight: false },
               { name: 'Professional', price: '$49', period: '/mo', desc: 'For agencies and growing teams.', features: ['Unlimited active listings', 'Priority search placement', 'Full portfolio dashboard', 'Advanced market analytics', 'Verified agent badge'], cta: 'Start Free Trial', highlight: true },
               { name: 'Enterprise', price: 'Custom', period: '', desc: 'For builders and developers with multi-project inventory.', features: ['Bulk project & unit uploads', 'Construction-stage sales tracking', 'Dedicated account manager', 'API access', 'Custom reporting'], cta: 'Talk to Sales', highlight: false },
             ].map((plan) => (
@@ -2521,7 +2503,7 @@ const Dashboard = () => {
                   ))}
                 </ul>
                 <Button
-                  onClick={() => (plan.name === 'Enterprise' ? openWhatsApp("Hi! I'd like to talk about an Enterprise / builder plan on JG Estate.") : (user ? setIsLaunchOpen(true) : openAuthModal('signup')))}
+                  onClick={() => (plan.name === 'Enterprise' ? contactAdvisor("Hi! I'd like to talk about an Enterprise / builder plan on JG Estate.") : (user ? setIsLaunchOpen(true) : openAuthModal('signup')))}
                   className={`w-full font-bold rounded-xl py-5 sm:py-6 ${plan.highlight ? 'bg-white text-stone-900 hover:bg-brand-50' : 'bg-stone-900 text-white hover:bg-brand-600'}`}
                 >
                   {plan.cta}
@@ -2576,7 +2558,7 @@ const Dashboard = () => {
               <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Stay ahead of the market</h2>
             </div>
             <button
-              onClick={() => openWhatsApp("Hi! I'd like to get real estate market updates and buying guides from JG Estate.")}
+              onClick={() => contactAdvisor("Hi! I'd like to get real estate market updates and buying guides from JG Estate.")}
               className="text-sm font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1.5 shrink-0"
             >
               Get Updates <ArrowRight className="w-3.5 h-3.5" />
@@ -2611,7 +2593,7 @@ const Dashboard = () => {
             ].map((article) => (
               <div
                 key={article.title}
-                onClick={() => openWhatsApp(`Hi! I'd like to read more about: "${article.title}"`)}
+                onClick={() => contactAdvisor(`Hi! I'd like to read more about: "${article.title}"`)}
                 className="bg-white border border-stone-200 rounded-2xl p-6 space-y-4 cursor-pointer hover:border-brand-300 hover:shadow-sm transition-all group"
               >
                 <div className="flex items-center gap-2">
@@ -2953,7 +2935,7 @@ const Dashboard = () => {
                     <p className="text-sm text-stone-500 mt-2">Try softening your filter coordinates or select another geographic market segment.</p>
                   </div>
                 ) : browseView === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-11">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                     {filteredProjects.map(project => (
                         <ProjectCard
                           key={project.id}
@@ -3015,14 +2997,14 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="inventory" className="mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-16">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {projects
                 .filter(p => p.developerId === user?.uid)
                 .map(project => (
-                  <ProjectCard 
-                    key={project.id} 
-                    project={project} 
-                    onSelect={handleSelectProject} 
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onSelect={handleSelectProject}
                     isFavorite={favorites.includes(project.id)}
                     onToggleFavorite={handleToggleFavorite}
                   />
@@ -3373,11 +3355,11 @@ const Dashboard = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-2.5">
                             <Button
-                              onClick={() => openWhatsApp(`Hi ${listingAgent.name}! I'm interested in ${selectedProject.name}, ${selectedProject.city}. Could you share more details?`)}
-                              className="bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-xl font-bold text-xs"
+                              onClick={() => contactAdvisor(`Hi ${listingAgent.name}! I'm interested in ${selectedProject.name}, ${selectedProject.city}. Could you share more details?`)}
+                              className="bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-bold text-xs"
                             >
-                              <WhatsAppIcon className="w-3.5 h-3.5 mr-1.5" />
-                              WhatsApp
+                              <Mail className="w-3.5 h-3.5 mr-1.5" />
+                              Email
                             </Button>
                             <Button
                               variant="outline"
@@ -3438,11 +3420,11 @@ const Dashboard = () => {
 
                     {/* Contact Agent */}
                     <Button
-                      onClick={() => openWhatsApp(`Hi! I'm interested in ${selectedProject.name} (${selectedProject.location}). ${selectedProject.listingType === 'rent' ? 'Rent' : 'Price'}: ${priceLabel(selectedProject.basePrice, selectedProject.currency, selectedProject.listingType)}. Please share details and arrange a site visit. ${window.location.origin}/property/${selectedProject.id}`)}
-                      className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-3xl py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all"
+                      onClick={() => contactAdvisor(`Hi! I'm interested in ${selectedProject.name} (${selectedProject.location}). ${selectedProject.listingType === 'rent' ? 'Rent' : 'Price'}: ${priceLabel(selectedProject.basePrice, selectedProject.currency, selectedProject.listingType)}. Please share details and arrange a site visit. ${window.location.origin}/property/${selectedProject.id}`)}
+                      className="w-full bg-brand-600 text-white hover:bg-brand-700 font-bold rounded-xl sm:rounded-3xl py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all"
                     >
-                      <WhatsAppIcon className="w-4 h-4 mr-2" />
-                      Contact Agent on WhatsApp
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email Agent
                     </Button>
                     <a href={`tel:${AGENT_PHONE.replace(/\s/g, '')}`} className="block">
                       <Button
@@ -3784,11 +3766,11 @@ const Dashboard = () => {
               const area = Number(evalForm.area);
               if (!countryMeta || !cityMeta || !area) return;
               const mid = Math.round(cityMeta.pricePerUnit * area);
-              openWhatsApp(`Hi! I'd like a professional valuation for my property in ${cityMeta.city}, ${countryMeta.name} (${area}${countryMeta.unitLabel}). The platform's automated estimate was around ${formatPriceFull(mid, countryMeta.currency)}.`);
+              contactAdvisor(`Hi! I'd like a professional valuation for my property in ${cityMeta.city}, ${countryMeta.name} (${area}${countryMeta.unitLabel}). The platform's automated estimate was around ${formatPriceFull(mid, countryMeta.currency)}.`);
             }}
-            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
+            className="w-full bg-brand-600 text-white hover:bg-brand-700 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
           >
-            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            <Mail className="w-4 h-4 mr-2" />
             Get a Professional Valuation
           </Button>
         </DialogContent>
@@ -3891,17 +3873,17 @@ const Dashboard = () => {
             })()}
           </div>
           <Button
-            onClick={() => openWhatsApp(`Hi! I used the EMI calculator on JG Estate (price ${formatPriceFull(emiForm.price, emiForm.currency)}, ${emiForm.downPaymentPct}% down, ${emiForm.rate}% rate, ${emiForm.years} years) and I'd like to talk to a financing partner.`)}
-            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
+            onClick={() => contactAdvisor(`Hi! I used the EMI calculator on JG Estate (price ${formatPriceFull(emiForm.price, emiForm.currency)}, ${emiForm.downPaymentPct}% down, ${emiForm.rate}% rate, ${emiForm.years} years) and I'd like to talk to a financing partner.`)}
+            className="w-full bg-brand-600 text-white hover:bg-brand-700 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
           >
-            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            <Mail className="w-4 h-4 mr-2" />
             Talk to a Financing Partner
           </Button>
         </DialogContent>
       </Dialog>
 
       {/* Ask AI — natural-language search assist. Routes the query to an advisor via
-          WhatsApp rather than a black-box match, since there's no live LLM search
+          email rather than a black-box match, since there's no live LLM search
           backend yet — this keeps the promise honest while still being useful. */}
       <Dialog open={isAskAiOpen} onOpenChange={setIsAskAiOpen}>
         <DialogContent
@@ -3940,13 +3922,13 @@ const Dashboard = () => {
           <Button
             disabled={!askAiQuery.trim()}
             onClick={() => {
-              openWhatsApp(`Hi! I used Ask AI on JG Estate. Here's what I'm looking for: ${askAiQuery}`);
+              contactAdvisor(`Hi! I used Ask AI on JG Estate. Here's what I'm looking for: ${askAiQuery}`);
               setIsAskAiOpen(false);
               setAskAiQuery('');
             }}
-            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] disabled:opacity-40 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
+            className="w-full bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
           >
-            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            <Mail className="w-4 h-4 mr-2" />
             Get Matches From an Advisor
           </Button>
         </DialogContent>
@@ -4125,10 +4107,6 @@ const Dashboard = () => {
                 <p>We're happy to help with anything from a specific listing to a general question about how the platform works.</p>
                 <a href={`mailto:${SUPPORT_EMAIL}`} className="flex items-center gap-2 font-bold text-stone-900 hover:text-brand-600"><Mail className="w-4 h-4" />{SUPPORT_EMAIL}</a>
                 <a href={`tel:${AGENT_PHONE.replace(/\s/g, '')}`} className="flex items-center gap-2 font-bold text-stone-900 hover:text-brand-600"><Phone className="w-4 h-4" />{AGENT_PHONE}</a>
-                <button
-                  onClick={() => { setInfoModal(null); openWhatsApp("Hi! I'd like to get in touch with JG Estate."); }}
-                  className="flex items-center gap-2 font-bold text-stone-900 hover:text-brand-600"
-                ><MessageCircle className="w-4 h-4" />Chat with us on WhatsApp</button>
               </div>
             )}
             {infoModal === 'terms' && (
@@ -4187,7 +4165,7 @@ const Dashboard = () => {
 
           <div className="space-y-3">
             <p className="micro-label text-stone-400">Support</p>
-            <button onClick={() => openWhatsApp("Hi! I'd like to speak with a JG Estate advisor.")} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Talk to an Advisor</button>
+            <button onClick={() => contactAdvisor("Hi! I'd like to speak with a JG Estate advisor.")} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Talk to an Advisor</button>
             <button onClick={() => setInfoModal('about')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">About</button>
             <button onClick={() => setInfoModal('careers')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Careers</button>
             <button onClick={() => setInfoModal('contact')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Contact</button>
@@ -4342,11 +4320,11 @@ const Dashboard = () => {
           <Button
             onClick={() => {
               const names = compareIds.map(id => projects.find(p => p.id === id)?.name).filter(Boolean).join(', ');
-              openWhatsApp(`Hi! I'm comparing these properties on JG Estate: ${names}. Can an advisor help me decide?`);
+              contactAdvisor(`Hi! I'm comparing these properties on JG Estate: ${names}. Can an advisor help me decide?`);
             }}
-            className="w-full bg-[#25D366] text-white hover:bg-[#1ebe5b] font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
+            className="w-full bg-brand-600 text-white hover:bg-brand-700 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
           >
-            <WhatsAppIcon className="w-4 h-4 mr-2" />
+            <Mail className="w-4 h-4 mr-2" />
             Ask an Advisor to Help Me Decide
           </Button>
         </DialogContent>
@@ -4390,10 +4368,10 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <Button
-                      onClick={() => openWhatsApp(`Hi! I'd like to learn more about ${viewingBuilder}'s available projects on JG Estate.`)}
-                      className="bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6 shrink-0"
+                      onClick={() => contactAdvisor(`Hi! I'd like to learn more about ${viewingBuilder}'s available projects on JG Estate.`)}
+                      className="bg-brand-600 text-white hover:bg-brand-700 rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6 shrink-0"
                     >
-                      <WhatsAppIcon className="w-4 h-4 mr-2" />
+                      <Mail className="w-4 h-4 mr-2" />
                       Contact This Builder
                     </Button>
                   </div>
@@ -4420,7 +4398,7 @@ const Dashboard = () => {
                     </h3>
                   </div>
                   {builderProjects.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                       {builderProjects.map(project => (
                         <ProjectCard
                           key={project.id}
@@ -4469,11 +4447,11 @@ const Dashboard = () => {
                     </div>
                     <div className="flex flex-col gap-2.5 shrink-0 w-full sm:w-auto">
                       <Button
-                        onClick={() => openWhatsApp(`Hi ${currentShowcaseAgent.name}! I found your storefront on JG Estate and would like to know more about your listings.`)}
-                        className="bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6"
+                        onClick={() => contactAdvisor(`Hi ${currentShowcaseAgent.name}! I found your storefront on JG Estate and would like to know more about your listings.`)}
+                        className="bg-brand-600 text-white hover:bg-brand-700 rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6"
                       >
-                        <WhatsAppIcon className="w-4 h-4 mr-2" />
-                        Message on WhatsApp
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email Agent
                       </Button>
                       <a
                         href={`tel:${currentShowcaseAgent.phone.replace(/\s+/g, '')}`}
@@ -4500,7 +4478,7 @@ const Dashboard = () => {
                     {agentProjects.length} Active {agentProjects.length === 1 ? 'Listing' : 'Listings'}
                   </h3>
                   {agentProjects.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                       {agentProjects.map(project => (
                         <ProjectCard
                           key={project.id}

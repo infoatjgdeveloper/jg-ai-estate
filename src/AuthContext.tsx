@@ -30,6 +30,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isAuthModalOpen: boolean;
   authModalTab: AuthModalTab;
   openAuthModal: (tab?: AuthModalTab) => void;
@@ -106,6 +107,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   };
 
+  // Re-fetches the current user's profile doc and pushes it into state. Needed because
+  // writes made elsewhere (e.g. the profile settings dialog, or switching persona from
+  // the homepage) go straight to Firestore and would otherwise leave the `profile`
+  // object here stale until the next full page load / re-auth — which is exactly why
+  // switching role used to look like it "did nothing" in the UI.
+  const refreshProfile = async () => {
+    if (!auth.currentUser) return;
+    const docRef = doc(db, 'users', auth.currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) setProfile(docSnap.data());
+  };
+
   const signOutUser = async () => {
     const { signOut } = await import('firebase/auth');
     await signOut(auth);
@@ -121,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, profile, loading, isAuthReady,
-      signIn, signOut: signOutUser, signInWithEmail, signUpWithEmail, resetPassword,
+      signIn, signOut: signOutUser, signInWithEmail, signUpWithEmail, resetPassword, refreshProfile,
       isAuthModalOpen, authModalTab, openAuthModal, closeAuthModal, setAuthModalTab,
     }}>
       {children}
