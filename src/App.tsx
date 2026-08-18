@@ -1405,6 +1405,17 @@ const Dashboard = () => {
   const [isWhitepaperOpen, setIsWhitepaperOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<'about' | 'careers' | 'contact' | 'terms' | 'privacy' | 'disclaimer' | null>(null);
 
+  // --- Toasts: surfaces failed Firestore reads/writes to the user instead of failing
+  // silently. Previously every handleFirestoreError() call only logged to the console —
+  // a rejected write (permission error, offline, etc.) looked to the user like nothing
+  // happened at all.
+  const [toasts, setToasts] = useState<{ id: number; message: string; type: 'error' | 'success' }[]>([]);
+  const notify = useCallback((message: string, type: 'error' | 'success' = 'error') => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
+  }, []);
+
   // --- Zillow & 99acres style Filter Center states ---
   const [searchQuery, setSearchQuery] = useState("");
   const [budgetRange, setBudgetRange] = useState<string>("All"); // USD-equivalent tiers, works across all currencies
@@ -1461,7 +1472,7 @@ const Dashboard = () => {
     if (user) {
       updateDoc(doc(db, 'users', user.uid), {
         favorites: isFavorited ? arrayRemove(id) : arrayUnion(id),
-      }).catch((error) => handleFirestoreError(error, OperationType.WRITE, 'users/favorites'));
+      }).catch((error) => { notify("Couldn't update your favorites. Please try again."); handleFirestoreError(error, OperationType.WRITE, 'users/favorites'); });
     }
   };
 
@@ -1637,7 +1648,7 @@ const Dashboard = () => {
     const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'projects'));
+    }, (err) => { notify("Couldn't load properties. Please refresh the page."); handleFirestoreError(err, OperationType.LIST, 'projects'); });
 
     return () => unsubscribe();
   }, []);
@@ -1647,7 +1658,7 @@ const Dashboard = () => {
       const q = query(collection(db, 'investments'), where('investorId', '==', user.uid));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setInvestments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Investment)));
-      }, (err) => handleFirestoreError(err, OperationType.LIST, 'investments'));
+      }, (err) => { notify("Couldn't load your investments. Please refresh the page."); handleFirestoreError(err, OperationType.LIST, 'investments'); });
       return () => unsubscribe();
     }
   }, [user]);
@@ -1660,6 +1671,7 @@ const Dashboard = () => {
     }, (err) => {
       // If index is missing, Firestore will provide a link in the error message
       console.error("Resale units fetch error:", err);
+      notify("Couldn't load resale listings. Please refresh the page.");
       handleFirestoreError(err, OperationType.LIST, 'collectionGroup/units');
     });
     return () => unsubscribe();
@@ -1670,7 +1682,7 @@ const Dashboard = () => {
       const q = query(collection(db, `projects/${selectedProject.id}/units`), orderBy('unitNumber', 'asc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setProjectUnits(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit)));
-      }, (err) => handleFirestoreError(err, OperationType.LIST, `projects/${selectedProject.id}/units`));
+      }, (err) => { notify("Couldn't load unit availability. Please refresh the page."); handleFirestoreError(err, OperationType.LIST, `projects/${selectedProject.id}/units`); });
       return () => unsubscribe();
     }
   }, [selectedProject]);
@@ -1704,6 +1716,7 @@ const Dashboard = () => {
       setIsRelistingOpen(false);
       setSelectedInvestment(null);
     } catch (error) {
+      notify("Couldn't list your unit for resale. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, 'relisting');
     }
   };
@@ -1751,6 +1764,7 @@ const Dashboard = () => {
       setIsBookingOpen(false);
       setSelectedUnit(null);
     } catch (error) {
+      notify("Couldn't complete your booking. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, 'booking');
     }
   };
@@ -1771,6 +1785,7 @@ const Dashboard = () => {
       setBidAmount("");
       setSelectedUnit(null);
     } catch (error) {
+      notify("Couldn't place your bid. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, `projects/${selectedUnit.projectId}/units/${selectedUnit.id}/bids`);
     }
   };
@@ -1828,6 +1843,7 @@ const Dashboard = () => {
         listingType: "sale"
       });
     } catch (error) {
+      notify("Couldn't publish your listing. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, 'projects');
     }
   };
@@ -1843,6 +1859,7 @@ const Dashboard = () => {
         status: investment.paymentPlan.paidInstallments + 1 >= investment.paymentPlan.totalInstallments ? 'completed' : 'active'
       });
     } catch (error) {
+      notify("Couldn't record your payment. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, 'investments');
     }
   };
@@ -1864,6 +1881,7 @@ const Dashboard = () => {
       await refreshProfile();
       setIsProfileOpen(false);
     } catch (error) {
+      notify("Couldn't save your profile changes. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, 'users');
     }
   };
@@ -1878,6 +1896,7 @@ const Dashboard = () => {
       await setDoc(doc(db, 'users', user.uid), { role, updatedAt: serverTimestamp() }, { merge: true });
       await refreshProfile();
     } catch (error) {
+      notify("Couldn't switch your role. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, 'users');
     }
   };
@@ -2003,6 +2022,7 @@ const Dashboard = () => {
           setSelectedProject({ id: snap.id, ...snap.data() } as Project);
         }
       } catch (error) {
+        notify("Couldn't load this property. It may have been removed.");
         handleFirestoreError(error, OperationType.GET, `projects/${routeParams.id}`);
       }
     })();
@@ -2063,6 +2083,26 @@ const Dashboard = () => {
 
   return (
     <div className="tech-grid min-h-screen pb-24 bg-stone-50">
+      {/* Toast feed — fixed above everything (including dialogs) so a failed write is
+          always visible regardless of what's open on screen. */}
+      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm">
+        {toasts.map(t => (
+          <div
+            key={t.id}
+            className={`flex items-start gap-2.5 rounded-xl border px-4 py-3 shadow-lg text-sm font-semibold animate-in fade-in slide-in-from-top-2 ${
+              t.type === 'error'
+                ? 'bg-white border-rose-200 text-rose-700'
+                : 'bg-white border-emerald-200 text-emerald-700'
+            }`}
+          >
+            {t.type === 'error' ? <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> : <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />}
+            <span className="flex-1">{t.message}</span>
+            <button onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))} className="shrink-0 text-stone-400 hover:text-stone-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
       <Navbar
         onProfileClick={() => setIsProfileOpen(true)}
         onMarketplaceClick={() => scrollToSection('catalog')}
