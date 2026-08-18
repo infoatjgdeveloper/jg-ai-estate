@@ -69,6 +69,7 @@ import {
   Users,
   Briefcase,
   HardHat,
+  Phone,
   X
 } from 'lucide-react';
 
@@ -259,6 +260,40 @@ const AGENT_PHONE = '+91 99999 99999';
 const openWhatsApp = (message: string) => {
   window.open(`https://wa.me/${AGENT_WHATSAPP}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
 };
+
+// --- Listing agents (broker storefront) ---
+// Individual agent accounts aren't modeled in Firestore yet, so each listing is
+// deterministically assigned one of a small public roster of advisors — same
+// project always maps to the same agent, and every agent gets a real, working
+// storefront (/agent/:id) built purely from client data. When per-agent accounts
+// ship, swap `getAgentForProject` for a real `project.agentId` lookup.
+interface AgentProfile {
+  id: string;
+  name: string;
+  title: string;
+  phone: string;
+  whatsapp: string;
+  regions: string[];
+  bio: string;
+}
+
+const AGENT_ROSTER: AgentProfile[] = [
+  { id: 'isabelle-hart', name: 'Isabelle Hart', title: 'Senior International Advisor', phone: '+44 20 7946 0958', whatsapp: '442079460958', regions: ['Europe'], bio: 'Twelve years advising cross-border buyers into prime European residential markets, from new-build launches to landmark restorations.' },
+  { id: 'marcus-chen', name: 'Marcus Chen', title: 'Luxury Sales Director', phone: '+1 212 555 0148', whatsapp: '12125550148', regions: ['North America'], bio: 'Focused on flagship developments across New York and Miami, with a track record in full-floor and penthouse transactions.' },
+  { id: 'amira-al-suwaidi', name: 'Amira Al Suwaidi', title: 'Senior Property Consultant', phone: '+971 4 555 0193', whatsapp: '97145550193', regions: ['Middle East'], bio: 'Specialist in branded residences and waterfront developments across Dubai, working closely with master developers on delivery timelines.' },
+  { id: 'rohan-mehta', name: 'Rohan Mehta', title: 'Principal Broker', phone: '+91 98200 55123', whatsapp: '919820055123', regions: ['Asia'], bio: 'RERA-registered broker covering Mumbai and Bengaluru\'s prime residential corridors, with deep developer relationships for early-phase access.' },
+  { id: 'sofia-almeida', name: 'Sofia Almeida', title: 'International Advisor', phone: '+351 21 555 0176', whatsapp: '351215550176', regions: ['Europe'], bio: 'Guides overseas buyers through Iberian and Southern European purchases end to end, from reservation to golden-visa paperwork.' },
+  { id: 'daniel-osei', name: 'Daniel Osei', title: 'Global Client Advisor', phone: '+1 305 555 0122', whatsapp: '13055550122', regions: ['North America', 'Global'], bio: 'Works with relocating and diaspora buyers across multiple markets, coordinating remote viewings and financing introductions.' },
+];
+
+const hashProjectId = (id: string) => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h;
+};
+
+const getAgentForProject = (project: { id: string }): AgentProfile =>
+  AGENT_ROSTER[hashProjectId(project.id) % AGENT_ROSTER.length];
 
 // Rent listings show a monthly figure; sale listings show the abbreviated total price.
 const priceLabel = (basePrice: number, currency: string, listingType?: string) =>
@@ -619,8 +654,9 @@ const ProjectCard: React.FC<{
   isFavorite: boolean,
   onToggleFavorite: (id: string, e: React.MouseEvent) => void,
   isComparing?: boolean,
-  onToggleCompare?: (id: string, e: React.MouseEvent) => void
-}> = ({ project, onSelect, isFavorite, onToggleFavorite, isComparing, onToggleCompare }) => {
+  onToggleCompare?: (id: string, e: React.MouseEvent) => void,
+  onViewPortfolio?: (developerName: string) => void
+}> = ({ project, onSelect, isFavorite, onToggleFavorite, isComparing, onToggleCompare, onViewPortfolio }) => {
   const bhks = project.bhkOptions ? project.bhkOptions.join(' & ') : '3 BR';
   const sizeRange = project.areaRange || '2,400 - 4,800 sq.ft.';
   const cStatus = project.constructionStatus || 'Ready to Move';
@@ -688,7 +724,16 @@ const ProjectCard: React.FC<{
 
           <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6">
             <div className="flex items-center gap-2 mb-1 sm:mb-2 text-white/70">
-              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">{project.developerName}</p>
+              {onViewPortfolio && project.developerName ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onViewPortfolio(project.developerName!); }}
+                  className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] hover:text-white hover:underline underline-offset-2 transition-colors focus:outline-none"
+                >
+                  {project.developerName}
+                </button>
+              ) : (
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">{project.developerName}</p>
+              )}
               <span className="w-1.5 h-1.5 rounded-full bg-brand-400" />
               <p className="text-[10px] sm:text-xs font-semibold text-brand-300">{cStatus}</p>
             </div>
@@ -1161,7 +1206,7 @@ const MarketDashboard: React.FC<{ onSelectCountry: (name: string) => void }> = (
 const Dashboard = () => {
   const { user, profile, signIn } = useAuth();
   const navigate = useNavigate();
-  const routeParams = useParams<{ id?: string; countryName?: string }>();
+  const routeParams = useParams<{ id?: string; countryName?: string; builderName?: string; agentId?: string }>();
   const [projects, setProjects] = useState<Project[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [resaleUnits, setResaleUnits] = useState<Unit[]>([]);
@@ -1201,6 +1246,8 @@ const Dashboard = () => {
   const [askAiQuery, setAskAiQuery] = useState('');
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [viewingBuilder, setViewingBuilder] = useState<string | null>(null);
+  const [viewingAgentId, setViewingAgentId] = useState<string | null>(null);
 
   // Load and save favorite items
   useEffect(() => {
@@ -1639,6 +1686,43 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
+  // Builder Portfolio — a real, shareable page (/builder/:name) showing every
+  // active listing from one developer, built entirely from the developerName
+  // already on each project (no new backend field required).
+  const handleViewBuilder = useCallback((developerName: string) => {
+    setSelectedProject(null);
+    setViewingAgentId(null);
+    setViewingBuilder(developerName);
+    navigate(`/builder/${encodeURIComponent(developerName)}`);
+  }, [navigate]);
+
+  const handleCloseBuilder = useCallback(() => {
+    setViewingBuilder(null);
+    navigate('/');
+  }, [navigate]);
+
+  // Broker Store — a real, shareable page (/agent/:id) for one listing agent.
+  // See getAgentForProject above for how agents are assigned to listings.
+  const handleViewAgent = useCallback((agentId: string) => {
+    setSelectedProject(null);
+    setViewingBuilder(null);
+    setViewingAgentId(agentId);
+    navigate(`/agent/${agentId}`);
+  }, [navigate]);
+
+  const handleCloseAgent = useCallback(() => {
+    setViewingAgentId(null);
+    navigate('/');
+  }, [navigate]);
+
+  // Jump from inside a Builder Portfolio / Broker Store straight into a listing's
+  // full detail view, closing the portfolio/store overlay behind it.
+  const handleSelectFromShowcase = useCallback((project: Project) => {
+    setViewingBuilder(null);
+    setViewingAgentId(null);
+    handleSelectProject(project);
+  }, [handleSelectProject]);
+
   // Resolve a /property/:id deep link — use the already-loaded project if we have it,
   // otherwise fetch it directly so a cold/shared link still opens the right listing.
   useEffect(() => {
@@ -1669,12 +1753,49 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeParams.countryName]);
 
-  // Per-page <title> — basic SEO/share signal for listing pages.
+  // Resolve a /builder/:builderName deep link.
   useEffect(() => {
-    document.title = selectedProject
-      ? `${selectedProject.name} — ${selectedProject.city}, ${selectedProject.country} | JG Estate`
-      : 'JG Estate — Global Verified Real Estate Marketplace';
-  }, [selectedProject]);
+    if (routeParams.builderName) {
+      setViewingBuilder(decodeURIComponent(routeParams.builderName));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeParams.builderName]);
+
+  // Resolve an /agent/:agentId deep link.
+  useEffect(() => {
+    if (routeParams.agentId) {
+      setViewingAgentId(routeParams.agentId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeParams.agentId]);
+
+  const builderProjects = useMemo(
+    () => viewingBuilder ? projects.filter(p => p.developerName === viewingBuilder) : [],
+    [projects, viewingBuilder]
+  );
+
+  const currentShowcaseAgent = useMemo(
+    () => viewingAgentId ? AGENT_ROSTER.find(a => a.id === viewingAgentId) || null : null,
+    [viewingAgentId]
+  );
+
+  const agentProjects = useMemo(
+    () => viewingAgentId ? projects.filter(p => getAgentForProject(p).id === viewingAgentId) : [],
+    [projects, viewingAgentId]
+  );
+
+  // Per-page <title> — basic SEO/share signal for listing, builder & agent pages.
+  useEffect(() => {
+    if (selectedProject) {
+      document.title = `${selectedProject.name} — ${selectedProject.city}, ${selectedProject.country} | JG Estate`;
+    } else if (viewingBuilder) {
+      document.title = `${viewingBuilder} — Builder Portfolio | JG Estate`;
+    } else if (currentShowcaseAgent) {
+      document.title = `${currentShowcaseAgent.name} — Agent Storefront | JG Estate`;
+    } else {
+      document.title = 'JG Estate — Global Verified Real Estate Marketplace';
+    }
+  }, [selectedProject, viewingBuilder, currentShowcaseAgent]);
 
   return (
     <div className="tech-grid min-h-screen pb-24 bg-stone-50">
@@ -2407,6 +2528,7 @@ const Dashboard = () => {
                           onToggleFavorite={handleToggleFavorite}
                           isComparing={compareIds.includes(project.id)}
                           onToggleCompare={handleToggleCompare}
+                          onViewPortfolio={handleViewBuilder}
                         />
                       ))}
                   </div>
@@ -2787,7 +2909,52 @@ const Dashboard = () => {
                           Verification pending — confirm identity before paying
                         </div>
                       )}
+                      {selectedProject.developerName && (
+                        <Button
+                          variant="outline"
+                          onClick={() => handleViewBuilder(selectedProject.developerName!)}
+                          className="w-full border-stone-200 text-stone-700 hover:bg-stone-50 hover:text-brand-600 rounded-xl font-bold text-xs sm:text-sm"
+                        >
+                          <Building2 className="w-3.5 h-3.5 mr-2" />
+                          View Full Builder Portfolio
+                        </Button>
+                      )}
                     </Card>
+
+                    {/* Listing Agent Card — links to that agent's own storefront */}
+                    {(() => {
+                      const listingAgent = getAgentForProject(selectedProject);
+                      return (
+                        <Card className="bg-white border-stone-200 rounded-2xl sm:rounded-3xl shadow-sm p-6 space-y-4">
+                          <p className="micro-label text-stone-400">Your Listing Agent</p>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-stone-900 text-white flex items-center justify-center font-bold text-lg shrink-0">
+                              {listingAgent.name[0]}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-stone-900 truncate">{listingAgent.name}</p>
+                              <p className="text-xs font-semibold text-stone-400 truncate">{listingAgent.title}</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <Button
+                              onClick={() => openWhatsApp(`Hi ${listingAgent.name}! I'm interested in ${selectedProject.name}, ${selectedProject.city}. Could you share more details?`)}
+                              className="bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-xl font-bold text-xs"
+                            >
+                              <WhatsAppIcon className="w-3.5 h-3.5 mr-1.5" />
+                              WhatsApp
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleViewAgent(listingAgent.id)}
+                              className="border-stone-200 text-stone-700 hover:bg-stone-50 hover:text-brand-600 rounded-xl font-bold text-xs"
+                            >
+                              View Storefront
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })()}
 
                     {/* Key ROI / Yield Card */}
                     <Card className="bg-emerald-50/65 border-emerald-100 rounded-2xl sm:rounded-3xl shadow-sm p-6 space-y-4">
@@ -3668,6 +3835,175 @@ const Dashboard = () => {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Builder Portfolio — every active listing from one developer, on its own
+          shareable page (/builder/:name), so a developer can point buyers straight
+          at their full body of work instead of a single project. */}
+      <Dialog open={!!viewingBuilder} onOpenChange={(open) => !open && handleCloseBuilder()}>
+        <DialogContent
+          onClose={() => handleCloseBuilder()}
+          className="max-w-6xl max-h-[92vh] overflow-y-auto p-0 bg-white border-stone-200 rounded-3xl shadow-2xl"
+        >
+          {viewingBuilder && (() => {
+            const cities = Array.from(new Set(builderProjects.map(p => p.city)));
+            const countries = Array.from(new Set(builderProjects.map(p => p.country).filter(Boolean)));
+            const totalUnits = builderProjects.reduce((sum, p) => sum + (p.totalUnits || 0), 0);
+            const avgScore = builderProjects.length
+              ? Math.round(builderProjects.reduce((sum, p) => sum + (p.aiScore || 85), 0) / builderProjects.length)
+              : 0;
+            const isVerified = builderProjects.some(p => p.verified || p.reraId);
+            return (
+              <>
+                <div className="bg-stone-900 px-6 sm:px-12 py-12 sm:py-16 relative overflow-hidden shrink-0">
+                  <div className="absolute inset-0 tech-grid opacity-10" />
+                  <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                    <div className="space-y-3 sm:space-y-4">
+                      <p className="micro-label text-brand-400">Builder Portfolio</p>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-serif font-semibold text-2xl sm:text-3xl shrink-0">
+                          {viewingBuilder[0]}
+                        </div>
+                        <div>
+                          <h2 className="font-serif text-2xl sm:text-4xl font-semibold text-white tracking-tight">{viewingBuilder}</h2>
+                          {isVerified && (
+                            <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold mt-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5" /> Verified Developer
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => openWhatsApp(`Hi! I'd like to learn more about ${viewingBuilder}'s available projects on JG Estate.`)}
+                      className="bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6 shrink-0"
+                    >
+                      <WhatsAppIcon className="w-4 h-4 mr-2" />
+                      Contact This Builder
+                    </Button>
+                  </div>
+                  <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mt-8 sm:mt-10">
+                    {[
+                      { label: 'Active Projects', value: builderProjects.length },
+                      { label: 'Total Units', value: totalUnits.toLocaleString() },
+                      { label: 'Cities', value: cities.length },
+                      { label: 'Avg. AI Quality Score', value: `${avgScore}/100` },
+                    ].map((stat) => (
+                      <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5">
+                        <p className="text-xl sm:text-3xl font-bold text-white tracking-tight">{stat.value}</p>
+                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/50 mt-1">{stat.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-6 sm:p-12 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-xl sm:text-2xl font-semibold text-stone-900">
+                      {builderProjects.length} {builderProjects.length === 1 ? 'Project' : 'Projects'}
+                      {countries.length > 0 && <span className="text-stone-400 font-sans text-sm sm:text-base font-medium"> across {countries.join(', ')}</span>}
+                    </h3>
+                  </div>
+                  {builderProjects.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                      {builderProjects.map(project => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          onSelect={handleSelectFromShowcase}
+                          isFavorite={favorites.includes(project.id)}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-stone-500 font-medium">No active listings from this builder right now.</p>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Broker Store — a branded storefront for one listing agent's active
+          inventory, on its own shareable page (/agent/:id). */}
+      <Dialog open={!!viewingAgentId} onOpenChange={(open) => !open && handleCloseAgent()}>
+        <DialogContent
+          onClose={() => handleCloseAgent()}
+          className="max-w-6xl max-h-[92vh] overflow-y-auto p-0 bg-white border-stone-200 rounded-3xl shadow-2xl"
+        >
+          {currentShowcaseAgent && (() => {
+            const cities = Array.from(new Set(agentProjects.map(p => p.city)));
+            return (
+              <>
+                <div className="bg-gradient-to-br from-brand-700 to-brand-900 px-6 sm:px-12 py-12 sm:py-16 relative overflow-hidden shrink-0">
+                  <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                    <div className="space-y-3 sm:space-y-4">
+                      <p className="micro-label text-brand-200">Agent Storefront</p>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white text-brand-700 flex items-center justify-center font-serif font-semibold text-2xl sm:text-3xl shrink-0 shadow-xl">
+                          {currentShowcaseAgent.name[0]}
+                        </div>
+                        <div>
+                          <h2 className="font-serif text-2xl sm:text-4xl font-semibold text-white tracking-tight">{currentShowcaseAgent.name}</h2>
+                          <p className="text-brand-200 text-xs sm:text-sm font-bold uppercase tracking-wider mt-1">{currentShowcaseAgent.title}</p>
+                        </div>
+                      </div>
+                      <p className="text-white/80 text-sm sm:text-base font-medium max-w-xl leading-relaxed">{currentShowcaseAgent.bio}</p>
+                    </div>
+                    <div className="flex flex-col gap-2.5 shrink-0 w-full sm:w-auto">
+                      <Button
+                        onClick={() => openWhatsApp(`Hi ${currentShowcaseAgent.name}! I found your storefront on JG Estate and would like to know more about your listings.`)}
+                        className="bg-[#25D366] text-white hover:bg-[#1ebe5b] rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6"
+                      >
+                        <WhatsAppIcon className="w-4 h-4 mr-2" />
+                        Message on WhatsApp
+                      </Button>
+                      <a
+                        href={`tel:${currentShowcaseAgent.phone.replace(/\s+/g, '')}`}
+                        className="inline-flex items-center justify-center gap-2 bg-white/10 border border-white/20 text-white hover:bg-white/20 rounded-xl sm:rounded-2xl font-bold px-6 py-3 text-sm transition-colors"
+                      >
+                        <Phone className="w-4 h-4" /> {currentShowcaseAgent.phone}
+                      </a>
+                    </div>
+                  </div>
+                  <div className="relative grid grid-cols-2 gap-4 sm:gap-6 mt-8 sm:mt-10 max-w-md">
+                    <div className="bg-white/10 border border-white/20 rounded-2xl p-4 sm:p-5">
+                      <p className="text-xl sm:text-3xl font-bold text-white tracking-tight">{agentProjects.length}</p>
+                      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/60 mt-1">Active Listings</p>
+                    </div>
+                    <div className="bg-white/10 border border-white/20 rounded-2xl p-4 sm:p-5">
+                      <p className="text-xl sm:text-3xl font-bold text-white tracking-tight">{cities.length}</p>
+                      <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/60 mt-1">Cities Covered</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 sm:p-12 space-y-6">
+                  <h3 className="font-serif text-xl sm:text-2xl font-semibold text-stone-900">
+                    {agentProjects.length} Active {agentProjects.length === 1 ? 'Listing' : 'Listings'}
+                  </h3>
+                  {agentProjects.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                      {agentProjects.map(project => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          onSelect={handleSelectFromShowcase}
+                          isFavorite={favorites.includes(project.id)}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-stone-500 font-medium">No active listings assigned to this agent right now.</p>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -3684,6 +4020,8 @@ export default function App() {
                   above handleSelectProject for what this does and doesn't cover). */}
               <Route path="/property/:id" element={<Dashboard />} />
               <Route path="/country/:countryName" element={<Dashboard />} />
+              <Route path="/builder/:builderName" element={<Dashboard />} />
+              <Route path="/agent/:agentId" element={<Dashboard />} />
               <Route path="/" element={<Dashboard />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>
