@@ -1,10 +1,10 @@
 {
-  "projectId": "ai-studio-applet-webapp-99dc7",
-  "appId": "1:861840689766:web:d5829f8075768f4172bba7",
-  "apiKey": "AIzaSyBnhh8dib_EetOYchlEude1gI0Y17LReAY",
-  "authDomain": "ai-studio-applet-webapp-99dc7.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-fc52d3ad-7b16-4fa6-857a-87d9525031ec",
-  "storageBucket": "ai-studio-applet-webapp-99dc7.firebasestorage.app",
-  "messagingSenderId": "861840689766",
-  "measurementId": ""
+  "projectId": "jg-estate",
+  "appId": "1:43811375099:web:9a6a13bcf983c8534e6d5e",
+  "apiKey": "AIzaSyAndlOGc_J09zscAKaftUuxAvHVCB8HR_U",
+  "authDomain": "jg-estate.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "jg-estate.firebasestorage.app",
+  "messagingSenderId": "43811375099",
+  "measurementId": "G-3PVFZKZ1F6"
 }

@@ -74,7 +74,12 @@ import {
   MessageCircle,
   Bot,
   Send,
-  X
+  X,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 
 import { 
@@ -626,7 +631,7 @@ const Navbar = ({
   onProfileClick, onMarketplaceClick, selectedCountry, onSelectCountry,
   onBuyClick, onRentClick, onSellClick, onEvaluateClick, onInvestClick, onAdvisorClick, onEmiClick,
 }: NavbarProps) => {
-  const { user, profile, signIn, signOut } = useAuth();
+  const { user, profile, signOut, openAuthModal } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 shadow-sm">
@@ -743,7 +748,7 @@ const Navbar = ({
               </div>
             ) : (
               <Button
-                onClick={signIn}
+                onClick={() => openAuthModal('signin')}
                 className="bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl px-4 py-2 md:px-6 md:py-2.5 shadow-sm transition-all text-xs md:text-sm"
               >
                 Login
@@ -1409,7 +1414,7 @@ const MarketDashboard: React.FC<{ onSelectCountry: (name: string) => void }> = (
 };
 
 const Dashboard = () => {
-  const { user, profile, signIn } = useAuth();
+  const { user, profile, openAuthModal } = useAuth();
   const navigate = useNavigate();
   const routeParams = useParams<{ id?: string; countryName?: string; builderName?: string; agentId?: string }>();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -2056,7 +2061,7 @@ const Dashboard = () => {
         onSelectCountry={(name) => { handleSelectCountryRoute(name); scrollToSection('catalog'); }}
         onBuyClick={() => { setBrowseMode('buy'); scrollToSection('catalog'); }}
         onRentClick={() => { setBrowseMode('rent'); scrollToSection('catalog'); }}
-        onSellClick={() => (user ? setIsLaunchOpen(true) : signIn())}
+        onSellClick={() => (user ? setIsLaunchOpen(true) : openAuthModal('signup'))}
         onEvaluateClick={() => setIsEvaluateOpen(true)}
         onInvestClick={() => scrollToSection('market')}
         onAdvisorClick={() => openWhatsApp("Hi! I'd like to speak with a JG Estate advisor about buying, selling, or renting a property.")}
@@ -2291,14 +2296,14 @@ const Dashboard = () => {
                 role: 'Real Estate Agents',
                 copy: 'List properties for free, reach global buyers, and manage every enquiry from one dashboard.',
                 cta: 'List a Property',
-                onClick: () => { setProfileRole('agent'); (user ? setIsLaunchOpen(true) : signIn()); },
+                onClick: () => { setProfileRole('agent'); (user ? setIsLaunchOpen(true) : openAuthModal('signup')); },
               },
               {
                 icon: HardHat,
                 role: 'Builders & Developers',
                 copy: 'Showcase entire projects, publish unit-level inventory, and track construction-stage sales in real time.',
                 cta: 'Showcase a Project',
-                onClick: () => { setProfileRole('developer'); (user ? setIsLaunchOpen(true) : signIn()); },
+                onClick: () => { setProfileRole('developer'); (user ? setIsLaunchOpen(true) : openAuthModal('signup')); },
               },
               {
                 icon: TrendingUp,
@@ -2514,7 +2519,7 @@ const Dashboard = () => {
                   ))}
                 </ul>
                 <Button
-                  onClick={() => (plan.name === 'Enterprise' ? openWhatsApp("Hi! I'd like to talk about an Enterprise / builder plan on JG Estate.") : (user ? setIsLaunchOpen(true) : signIn()))}
+                  onClick={() => (plan.name === 'Enterprise' ? openWhatsApp("Hi! I'd like to talk about an Enterprise / builder plan on JG Estate.") : (user ? setIsLaunchOpen(true) : openAuthModal('signup')))}
                   className={`w-full font-bold rounded-xl py-5 sm:py-6 ${plan.highlight ? 'bg-white text-stone-900 hover:bg-brand-50' : 'bg-stone-900 text-white hover:bg-brand-600'}`}
                 >
                   {plan.cta}
@@ -2748,7 +2753,7 @@ const Dashboard = () => {
                   </Button>
                 ) : (
                   <Button
-                    onClick={signIn}
+                    onClick={() => openAuthModal('signin')}
                     className="bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-sm transition-all"
                   >
                     Sign In to Get Started
@@ -4107,7 +4112,7 @@ const Dashboard = () => {
             <p className="micro-label text-stone-400">Explore</p>
             <button onClick={() => { setBrowseMode('buy'); scrollToSection('catalog'); }} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Buy</button>
             <button onClick={() => { setBrowseMode('rent'); scrollToSection('catalog'); }} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Rent</button>
-            <button onClick={() => (user ? setIsLaunchOpen(true) : signIn())} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Sell</button>
+            <button onClick={() => (user ? setIsLaunchOpen(true) : openAuthModal('signup'))} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Sell</button>
             <button onClick={() => setIsEvaluateOpen(true)} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Evaluate</button>
             <button onClick={() => scrollToSection('market')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Invest</button>
           </div>
@@ -4451,6 +4456,265 @@ const Dashboard = () => {
   );
 };
 
+// Maps raw Firebase Auth error codes to short, human copy — the SDK's default
+// messages ("Firebase: Error (auth/email-already-in-use).") are technical and
+// look broken to a non-developer user.
+const friendlyAuthError = (err: unknown): string => {
+  const code = (err as { code?: string })?.code || '';
+  const map: Record<string, string> = {
+    'auth/email-already-in-use': 'An account with this email already exists. Try signing in instead.',
+    'auth/invalid-email': 'That email address doesn\'t look right.',
+    'auth/weak-password': 'Password should be at least 6 characters.',
+    'auth/invalid-credential': 'Incorrect email or password.',
+    'auth/wrong-password': 'Incorrect email or password.',
+    'auth/user-not-found': 'No account found with that email. Try signing up instead.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+    'auth/popup-closed-by-user': 'Sign-in was cancelled.',
+    'auth/network-request-failed': 'Network error — check your connection and try again.',
+    'auth/unauthorized-domain': 'This domain isn\'t authorized for sign-in yet. Contact support.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+};
+
+// Full Sign In / Sign Up modal — email+password with real account creation, a
+// Google one-click option, and a forgot-password flow. Replaces the previous
+// behavior where the "Login" button (and every other logged-out CTA) jumped
+// straight to a Google popup with no way to use an email account.
+const AuthModal = () => {
+  const { isAuthModalOpen, closeAuthModal, authModalTab, setAuthModalTab, signIn, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState<'form' | 'forgot' | 'forgot-sent'>('form');
+
+  const resetFields = () => {
+    setName(''); setEmail(''); setPassword(''); setConfirmPassword('');
+    setError(null); setSubmitting(false); setMode('form'); setShowPassword(false);
+  };
+
+  const handleClose = () => {
+    closeAuthModal();
+    resetFields();
+  };
+
+  const handleTabChange = (tab: string) => {
+    setAuthModalTab(tab as 'signin' | 'signup');
+    setError(null);
+  };
+
+  const handleGoogle = async () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      await signIn();
+      resetFields();
+    } catch (err) {
+      setError(friendlyAuthError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!email || !password) { setError('Enter your email and password.'); return; }
+    setSubmitting(true);
+    try {
+      await signInWithEmail(email, password);
+      resetFields();
+    } catch (err) {
+      setError(friendlyAuthError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!name.trim()) { setError('Tell us your name.'); return; }
+    if (!email) { setError('Enter your email.'); return; }
+    if (password.length < 6) { setError('Password should be at least 6 characters.'); return; }
+    if (password !== confirmPassword) { setError('Passwords don\'t match.'); return; }
+    setSubmitting(true);
+    try {
+      await signUpWithEmail(email, password, name);
+      resetFields();
+    } catch (err) {
+      setError(friendlyAuthError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!email) { setError('Enter the email on your account.'); return; }
+    setSubmitting(true);
+    try {
+      await resetPassword(email);
+      setMode('forgot-sent');
+    } catch (err) {
+      setError(friendlyAuthError(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={isAuthModalOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent onClose={handleClose} className="max-w-md bg-white border-stone-200 rounded-3xl shadow-2xl p-0 overflow-hidden">
+        <div className="px-6 pt-7 pb-2">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="flex items-center justify-center h-8 w-8 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white text-sm font-extrabold shadow-sm">JG</span>
+            <span className="text-lg font-extrabold text-stone-900 tracking-tight">Estate</span>
+          </div>
+
+          {mode === 'form' ? (
+            <>
+              <DialogHeader className="text-left p-0 space-y-1">
+                <DialogTitle className="text-xl font-bold text-stone-900">
+                  {authModalTab === 'signin' ? 'Welcome back' : 'Create your account'}
+                </DialogTitle>
+                <DialogDescription className="text-stone-500 text-sm">
+                  {authModalTab === 'signin'
+                    ? 'Sign in to manage listings, saved properties, and investments.'
+                    : 'Join as a buyer, agent, builder, or investor — takes under a minute.'}
+                </DialogDescription>
+              </DialogHeader>
+
+              <Tabs value={authModalTab} onValueChange={handleTabChange} className="mt-4">
+                <TabsList className="grid grid-cols-2 w-full bg-stone-100 rounded-xl p-1">
+                  <TabsTrigger value="signin" className="rounded-lg font-bold text-sm">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup" className="rounded-lg font-bold text-sm">Sign Up</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="signin" className="mt-5">
+                  <form onSubmit={handleSignIn} className="space-y-3">
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                      <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 rounded-xl border-stone-200 py-5" autoComplete="email" />
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                      <Input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 pr-10 rounded-xl border-stone-200 py-5" autoComplete="current-password" />
+                      <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => { setError(null); setMode('forgot'); }} className="text-xs font-bold text-brand-600 hover:text-brand-700">
+                        Forgot password?
+                      </button>
+                    </div>
+                    {error && <p className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{error}</p>}
+                    <Button type="submit" disabled={submitting} className="w-full bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl py-5">
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign In'}
+                    </Button>
+                  </form>
+                </TabsContent>
+
+                <TabsContent value="signup" className="mt-5">
+                  <form onSubmit={handleSignUp} className="space-y-3">
+                    <div className="relative">
+                      <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                      <Input type="text" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)}
+                        className="pl-10 rounded-xl border-stone-200 py-5" autoComplete="name" />
+                    </div>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                      <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 rounded-xl border-stone-200 py-5" autoComplete="email" />
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                      <Input type={showPassword ? 'text' : 'password'} placeholder="Password (min. 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 pr-10 rounded-xl border-stone-200 py-5" autoComplete="new-password" />
+                      <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                      <Input type={showPassword ? 'text' : 'password'} placeholder="Confirm password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="pl-10 rounded-xl border-stone-200 py-5" autoComplete="new-password" />
+                    </div>
+                    {error && <p className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{error}</p>}
+                    <Button type="submit" disabled={submitting} className="w-full bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl py-5">
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Account'}
+                    </Button>
+                    <p className="text-[11px] text-stone-400 text-center leading-relaxed">
+                      By signing up you agree to be contacted about your listings and enquiries.
+                    </p>
+                  </form>
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex items-center gap-3 my-5">
+                <div className="h-px flex-1 bg-stone-200" />
+                <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Or</span>
+                <div className="h-px flex-1 bg-stone-200" />
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleGoogle}
+                disabled={submitting}
+                variant="outline"
+                className="w-full rounded-xl py-5 border-stone-200 font-bold text-stone-700 hover:bg-stone-50 mb-6"
+              >
+                <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Continue with Google
+              </Button>
+            </>
+          ) : mode === 'forgot' ? (
+            <>
+              <DialogHeader className="text-left p-0 space-y-1">
+                <DialogTitle className="text-xl font-bold text-stone-900">Reset your password</DialogTitle>
+                <DialogDescription className="text-stone-500 text-sm">Enter your account email and we'll send a reset link.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleForgotPassword} className="space-y-3 mt-4">
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                  <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 rounded-xl border-stone-200 py-5" autoComplete="email" />
+                </div>
+                {error && <p className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{error}</p>}
+                <Button type="submit" disabled={submitting} className="w-full bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl py-5">
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Reset Link'}
+                </Button>
+                <button type="button" onClick={() => { setError(null); setMode('form'); }} className="w-full text-center text-xs font-bold text-stone-500 hover:text-stone-700 pb-6">
+                  Back to sign in
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="py-6 text-center space-y-3">
+              <div className="mx-auto h-12 w-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+              </div>
+              <p className="font-bold text-stone-900">Check your inbox</p>
+              <p className="text-sm text-stone-500 px-4">We've sent a password reset link to <span className="font-semibold text-stone-700">{email}</span>.</p>
+              <button type="button" onClick={() => { setMode('form'); setAuthModalTab('signin'); }} className="text-xs font-bold text-brand-600 hover:text-brand-700 pb-6 block w-full">
+                Back to sign in
+              </button>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -4469,6 +4733,7 @@ export default function App() {
               <Route path="*" element={<Dashboard />} />
             </Routes>
             <FloatingAIChat />
+            <AuthModal />
           </div>
         </BrowserRouter>
       </AuthProvider>
