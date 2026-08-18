@@ -25,7 +25,9 @@ import {
   serverTimestamp,
   orderBy,
   limit,
-  collectionGroup
+  collectionGroup,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { 
   Building2, 
@@ -1428,8 +1430,15 @@ const Dashboard = () => {
   const [viewingBuilder, setViewingBuilder] = useState<string | null>(null);
   const [viewingAgentId, setViewingAgentId] = useState<string | null>(null);
 
-  // Load and save favorite items
+  // Favorites: signed-out visitors get a localStorage-backed list (so they can try the
+  // feature before creating an account); signed-in users get it stored on their own
+  // Firestore profile instead, so it follows them across devices/browsers rather than
+  // silently resetting the moment they log in from somewhere else.
   useEffect(() => {
+    if (user) {
+      setFavorites(Array.isArray(profile?.favorites) ? profile.favorites : []);
+      return;
+    }
     const saved = localStorage.getItem('jg_ai_estate_favorites');
     if (saved) {
       try {
@@ -1438,17 +1447,22 @@ const Dashboard = () => {
         console.error(e);
       }
     }
-  }, []);
+  }, [user, profile]);
 
   useEffect(() => {
+    if (user) return; // signed-in favorites live on the Firestore profile, not localStorage
     localStorage.setItem('jg_ai_estate_favorites', JSON.stringify(favorites));
-  }, [favorites]);
+  }, [favorites, user]);
 
   const handleToggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setFavorites(prev =>
-      prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
-    );
+    const isFavorited = favorites.includes(id);
+    setFavorites(prev => (isFavorited ? prev.filter(fId => fId !== id) : [...prev, id]));
+    if (user) {
+      updateDoc(doc(db, 'users', user.uid), {
+        favorites: isFavorited ? arrayRemove(id) : arrayUnion(id),
+      }).catch((error) => handleFirestoreError(error, OperationType.WRITE, 'users/favorites'));
+    }
   };
 
   // Property comparison — cap at 4, matching every major portal's compare tray.
