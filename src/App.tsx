@@ -1623,12 +1623,15 @@ const Dashboard = () => {
   }, [stageProjectOnBatch]);
 
   useEffect(() => {
-    // Any signed-in user can trigger the initial catalog seed if it's empty (public demo)
+    // Any signed-in user can trigger the initial catalog seed if it's empty (public demo).
+    // Deliberately NOT depending on `profile` — that object gets a new reference on every
+    // refreshProfile() call (profile edits, role switches), which would otherwise re-run a
+    // full collection read + migration scan on every unrelated profile update.
     if (user) {
       seedData();
       migrateRealBuilderData();
     }
-  }, [seedData, migrateRealBuilderData, profile, user]);
+  }, [seedData, migrateRealBuilderData, user]);
 
   useEffect(() => {
     const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
