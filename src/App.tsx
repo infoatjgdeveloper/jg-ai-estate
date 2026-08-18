@@ -71,6 +71,9 @@ import {
   Briefcase,
   HardHat,
   Phone,
+  MessageCircle,
+  Bot,
+  Send,
   X
 } from 'lucide-react';
 
@@ -375,15 +378,145 @@ const WhatsAppIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
   </svg>
 );
 
-const FloatingWhatsApp = () => (
-  <button
-    onClick={() => openWhatsApp('Hi! I am browsing JG AI Estate and would like to speak with an agent.')}
-    className="fixed bottom-6 right-6 z-[60] w-14 h-14 sm:w-16 sm:h-16 bg-[#25D366] hover:bg-[#1ebe5b] text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110"
-    aria-label="Chat with an agent on WhatsApp"
-  >
-    <WhatsAppIcon className="w-7 h-7 sm:w-8 sm:h-8" />
-  </button>
-);
+// --- AI Assistant (floating chat) ---
+// Rule-based, keyword-matched replies about how the marketplace actually works —
+// not a connected LLM (no backend/API key wired up for that), but a real, working
+// chat UI with a genuine escalation path to a human advisor on WhatsApp, rather
+// than a chat window that fakes intelligence and dead-ends.
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+const AI_CHAT_WELCOME = "Hi, I'm the JG Estate assistant. Ask me how verification works, what it costs to list, which markets we cover, or anything about buying, renting or listing — and I can loop in a human advisor any time.";
+
+const getAssistantReply = (raw: string): string => {
+  const q = raw.toLowerCase();
+  if (/\b(hi|hello|hey)\b/.test(q)) {
+    return "Hello! I can help with how verification works, listing fees, which markets we cover, or EMI estimates. What would you like to know?";
+  }
+  if (/verif|scam|trust|safe|fraud/.test(q)) {
+    return "Every listing passes a 12-point verification process before it goes live, and buyers verify their identity too before contact details are shared — verification runs both ways. Payments route through licensed processors in each market, never held by this platform.";
+  }
+  if (/how.*work|process|step/.test(q)) {
+    return "For buyers: search, get ID-verified, compare properties, then close through a licensed local payment processor. For agents, builders and investors: create an account, list your inventory, manage every enquiry from one dashboard, and get discovered through your own Builder Portfolio or Broker Storefront page.";
+  }
+  if (/countr|market|where|europe|eu\b|dubai|india|usa|america/.test(q)) {
+    return `We're live across ${COUNTRIES.length} markets — all 27 EU member states, plus the UK, India, the United States and the UAE.`;
+  }
+  if (/emi|loan|mortgage|financ|afford/.test(q)) {
+    return "I can't calculate that inside the chat yet, but the EMI calculator (top navigation, under Home Loans) will estimate your monthly payment from price, down payment and interest rate.";
+  }
+  if (/list|sell|post|agent|developer|builder/.test(q)) {
+    return "You can list for free as an individual agent, or as a developer with a full multi-unit project — use \"Post Property\" in the top bar. New listings show as Pending Review until they pass verification.";
+  }
+  if (/fee|cost|price|charge|free/.test(q)) {
+    return "Browsing, saved searches and contacting an agent are always free for buyers and renters. Agents and builders get a free Starter plan, with paid plans for unlimited listings and priority placement.";
+  }
+  if (/human|real person|advisor|call me|talk to/.test(q)) {
+    return "Happy to connect you — tap \"Talk to a Human Advisor\" below and I'll hand you off on WhatsApp right away.";
+  }
+  return "I don't have a scripted answer for that one yet, but a human advisor can help — tap \"Talk to a Human Advisor\" below, or use the search bar to browse verified listings.";
+};
+
+const FloatingAIChat = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'assistant', text: AI_CHAT_WELCOME }]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, isTyping]);
+
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text) return;
+    setMessages(prev => [...prev, { role: 'user', text }]);
+    setInput('');
+    setIsTyping(true);
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: 'assistant', text: getAssistantReply(text) }]);
+      setIsTyping(false);
+    }, 550 + Math.random() * 500);
+  };
+
+  return (
+    <>
+      {isOpen && (
+        <div className="fixed bottom-24 right-4 sm:right-6 z-[60] w-[calc(100vw-2rem)] sm:w-96 max-h-[70vh] bg-white rounded-3xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden">
+          <div className="bg-stone-900 px-5 py-4 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white leading-tight">JG Estate Assistant</p>
+                <p className="text-[10px] font-semibold text-emerald-400 leading-tight">● Online</p>
+              </div>
+            </div>
+            <button onClick={() => setIsOpen(false)} aria-label="Close chat" className="text-white/60 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-stone-50 min-h-[280px]">
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed font-medium ${
+                  m.role === 'user' ? 'bg-brand-600 text-white rounded-br-md' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-md'
+                }`}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-stone-200 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1">
+                  {[0, 1, 2].map(i => (
+                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-stone-300 animate-bounce" style={{ animationDelay: `${i * 0.12}s` }} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-3 border-t border-stone-200 shrink-0 space-y-2">
+            <button
+              onClick={() => openWhatsApp('Hi! I was chatting with the JG Estate AI assistant and would like to speak with a human advisor.')}
+              className="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-600 hover:text-brand-700 py-1.5"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5" />
+              Talk to a Human Advisor
+            </button>
+            <div className="flex items-center gap-2">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Ask about listings, verification, fees..."
+                className="flex-1 px-4 py-2.5 rounded-xl bg-stone-100 border border-stone-200 text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:bg-white"
+              />
+              <button
+                onClick={handleSend}
+                aria-label="Send message"
+                className="w-10 h-10 shrink-0 bg-brand-600 hover:bg-stone-900 text-white rounded-xl flex items-center justify-center transition-colors"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <button
+        onClick={() => setIsOpen(o => !o)}
+        className="fixed bottom-6 right-4 sm:right-6 z-[60] w-14 h-14 sm:w-16 sm:h-16 bg-brand-600 hover:bg-stone-900 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110"
+        aria-label={isOpen ? 'Close AI assistant' : 'Open AI assistant'}
+      >
+        {isOpen ? <X className="w-6 h-6 sm:w-7 sm:h-7" /> : <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7" />}
+      </button>
+    </>
+  );
+};
 
 const TICKERS = [
   { symbol: 'BER/DE', price: '€5,450/m²', change: '+3.2%' },
@@ -519,7 +652,9 @@ const Navbar = ({
           <LocationSwitcher selectedCountry={selectedCountry} onSelectCountry={onSelectCountry} />
 
           <div className="flex items-center gap-3 sm:gap-5">
-            {!user && <button onClick={signIn} className="hidden sm:inline hover:text-white/80">Login</button>}
+            {/* Single sign-in entry point lives in Row 3 below — this row used to carry
+                a second "Login" text link too, which just duplicated the same signIn()
+                call for no reason. */}
             <button
               onClick={onSellClick}
               className="bg-white text-brand-700 hover:bg-white/90 rounded-full px-4 py-1.5 flex items-center gap-1.5 shadow-sm ring-1 ring-white/40"
@@ -2102,7 +2237,7 @@ const Dashboard = () => {
               {
                 icon: UserIcon,
                 role: 'Customers',
-                copy: 'Browse, evaluate and buy or rent verified properties across 10 countries — with live pricing and no hidden fees.',
+                copy: `Browse, evaluate and buy or rent verified properties across ${COUNTRIES.length} countries — with live pricing and no hidden fees.`,
                 cta: 'Start Browsing',
                 onClick: () => { setBrowseMode('buy'); scrollToSection('catalog'); },
               },
@@ -2111,14 +2246,14 @@ const Dashboard = () => {
                 role: 'Real Estate Agents',
                 copy: 'List properties for free, reach global buyers, and manage every enquiry from one dashboard.',
                 cta: 'List a Property',
-                onClick: () => (user ? setIsLaunchOpen(true) : signIn()),
+                onClick: () => { setProfileRole('agent'); (user ? setIsLaunchOpen(true) : signIn()); },
               },
               {
                 icon: HardHat,
                 role: 'Builders & Developers',
                 copy: 'Showcase entire projects, publish unit-level inventory, and track construction-stage sales in real time.',
                 cta: 'Showcase a Project',
-                onClick: () => (user ? setIsLaunchOpen(true) : signIn()),
+                onClick: () => { setProfileRole('developer'); (user ? setIsLaunchOpen(true) : signIn()); },
               },
               {
                 icon: TrendingUp,
@@ -2466,58 +2601,62 @@ const Dashboard = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-24 md:space-y-40 pt-16 sm:pt-24 relative z-30">
-        {/* Market Overview */}
-        <div id="market" className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
-          <div className="lg:col-span-2">
-            <MarketAnalytics />
-          </div>
-          <div className="space-y-12">
-            <Card className="bg-white border-stone-200 p-6 sm:p-10 rounded-3xl flex flex-col justify-between h-full shadow-sm">
-              <div className="space-y-4 sm:space-y-6">
-                <div className="bg-brand-50 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center">
-                  <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-brand-600" />
+        {/* Global Market Index & Verification — was an unlabeled chart next to a wall of
+            30+ individual country buttons with no section header; redesigned into a
+            proper header, a region-level breakdown (Europe/N. America/Middle East/Asia)
+            instead of one button per country, and copy that reflects that verification
+            runs on both the buyer and seller side. */}
+        <div id="market" className="space-y-10 sm:space-y-14">
+          <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-600">Live Market Index</p>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Real data, verified on both sides</h2>
+            <p className="text-sm sm:text-base text-stone-500 font-medium">One composite index built from every tracked city, next to exactly how trust works here.</p>
+          </Reveal>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+            <Reveal className="lg:col-span-2">
+              <MarketAnalytics />
+            </Reveal>
+            <Reveal delay={0.1} className="space-y-6">
+              <Card className="bg-stone-900 p-6 sm:p-10 rounded-3xl flex flex-col justify-between shadow-sm border-none">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="bg-brand-500/15 w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                    <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-brand-400" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Verified & Secure, Both Sides</h3>
+                  <p className="text-sm text-stone-400 leading-relaxed font-medium">
+                    Every listing passes a 12-point verification process before it goes live — and buyers verify their identity too before any contact details are shared. Payments route through licensed processors in each market, never held by this platform.
+                  </p>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">Verified & Secure, Everywhere</h3>
-                <p className="text-sm sm:text-lg text-stone-500 leading-relaxed font-medium">
-                  Every listing goes through a 12-point verification process covering legal compliance and seller ID checks. Payments are routed through licensed processors in each market — never held by this platform.
-                </p>
-              </div>
-              <div className="space-y-4 sm:space-y-6 pt-4 sm:pt-0">
-                <p className="micro-label text-stone-400">Markets</p>
-                <div className="flex flex-wrap gap-2 sm:gap-3">
-                  <button
-                    onClick={() => handleSelectCountryRoute('All')}
-                    className={`px-4 py-2 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold transition-all border ${
-                      selectedCountry === 'All'
-                        ? 'bg-brand-600 border-brand-600 text-white shadow-lg shadow-brand-100'
-                        : 'border-stone-200 text-stone-500 hover:bg-stone-50'
-                    }`}
-                  >
-                    Global
-                  </button>
-                  {COUNTRIES.map((c) => (
-                    <button
-                      key={c.code}
-                      onClick={() => handleSelectCountryRoute(c.name)}
-                      className={`px-4 py-2 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold transition-all border ${
-                        selectedCountry === c.name
-                          ? 'bg-brand-600 border-brand-600 text-white shadow-lg shadow-brand-100'
-                          : 'border-stone-200 text-stone-500 hover:bg-stone-50'
-                      }`}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
+              </Card>
+              <Card className="bg-white border-stone-200 p-6 sm:p-8 rounded-3xl shadow-sm space-y-5">
+                <p className="micro-label text-stone-400">{COUNTRIES.length} Markets, By Region</p>
+                <div className="space-y-3">
+                  {(['Europe', 'North America', 'Middle East', 'Asia'] as const).map((region) => {
+                    const count = COUNTRIES.filter(c => c.region === region).length;
+                    if (count === 0) return null;
+                    return (
+                      <div key={region} className="flex items-center justify-between py-2 border-b border-stone-100 last:border-0">
+                        <span className="text-sm font-bold text-stone-800">{region}</span>
+                        <span className="text-sm font-bold text-brand-600">{count} {count === 1 ? 'market' : 'markets'}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            </Card>
+                <button
+                  onClick={() => scrollToSection('catalog')}
+                  className="w-full text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center justify-center gap-1.5 pt-1"
+                >
+                  Browse every market <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </Card>
+            </Reveal>
           </div>
         </div>
 
         <Tabs defaultValue="browse" className="space-y-12 md:space-y-20" id="catalog">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 md:gap-10">
+          <Reveal className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 md:gap-10">
             <div className="space-y-2 md:space-y-4">
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-stone-900 tracking-tighter">Explore Properties</h2>
+              <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold text-stone-900 tracking-tight">Explore Properties</h2>
               <p className="micro-label text-brand-600">Verified Listings Across {COUNTRIES.length} Countries</p>
             </div>
             <div className="w-full lg:w-auto overflow-x-auto scrollbar-none pb-2">
@@ -2543,7 +2682,7 @@ const Dashboard = () => {
                 </TabsTrigger>
               </TabsList>
             </div>
-          </div>
+          </Reveal>
 
           <TabsContent value="browse" className="mt-0">
             {projects.length === 0 ? (
@@ -3785,15 +3924,17 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Role Switcher Selector */}
+            {/* Role Switcher Selector — matches the four personas marketed on the homepage
+                (Customers browse without an account, so only the other three need a
+                distinct dashboard view here). */}
             <div className="space-y-3 sm:space-y-4">
               <Label className="micro-label text-stone-400">Account Type</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                   onClick={() => setProfileRole("investor")}
                   className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border text-left transition-all relative ${
-                    profileRole === "investor" 
-                      ? "border-brand-600 bg-brand-50/20 shadow-md ring-2 ring-brand-600/10" 
+                    profileRole === "investor"
+                      ? "border-brand-600 bg-brand-50/20 shadow-md ring-2 ring-brand-600/10"
                       : "border-stone-200 text-stone-500 hover:bg-stone-50"
                   }`}
                 >
@@ -3801,10 +3942,21 @@ const Dashboard = () => {
                   <p className="text-[10px] sm:text-[11px] text-stone-400 mt-2 font-medium leading-relaxed">Reservations, resale bidding, and a portfolio tracker for what you're watching or holding.</p>
                 </button>
                 <button
+                  onClick={() => setProfileRole("agent")}
+                  className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border text-left transition-all relative ${
+                    profileRole === "agent"
+                      ? "border-brand-600 bg-brand-50/20 shadow-md ring-2 ring-brand-600/10"
+                      : "border-stone-200 text-stone-500 hover:bg-stone-50"
+                  }`}
+                >
+                  <p className="font-bold text-stone-900 text-base sm:text-lg">Agent View</p>
+                  <p className="text-[10px] sm:text-[11px] text-stone-400 mt-2 font-medium leading-relaxed">List individual resale properties, manage buyer enquiries, and get your own Broker Storefront page.</p>
+                </button>
+                <button
                   onClick={() => setProfileRole("developer")}
                   className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border text-left transition-all relative ${
-                    profileRole === "developer" 
-                      ? "border-brand-600 bg-brand-50/20 shadow-md ring-2 ring-brand-600/10" 
+                    profileRole === "developer"
+                      ? "border-brand-600 bg-brand-50/20 shadow-md ring-2 ring-brand-600/10"
                       : "border-stone-200 text-stone-500 hover:bg-stone-50"
                   }`}
                 >
@@ -3814,11 +3966,13 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Region Filter Selector */}
+            {/* Region Filter Selector — was hard-coded to Indian sub-regions from an
+                earlier single-market version of the app; now matches the actual global
+                regions this marketplace operates in. */}
             <div className="space-y-3 sm:space-y-4">
               <Label className="micro-label text-stone-400">Select Operating Region</Label>
               <div className="flex flex-wrap gap-2.5 sm:gap-3">
-                {['Global', 'North India', 'South India', 'West India', 'East India'].map((r) => (
+                {['Global', 'Europe', 'North America', 'Middle East', 'Asia'].map((r) => (
                   <button
                     key={r}
                     type="button"
@@ -4269,7 +4423,7 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>
-            <FloatingWhatsApp />
+            <FloatingAIChat />
           </div>
         </BrowserRouter>
       </AuthProvider>

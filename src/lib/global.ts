@@ -15,6 +15,12 @@ export const CURRENCY_META: Record<string, { symbol: string; locale: string; suf
   INR: { symbol: '₹', locale: 'en-IN' },
   AED: { symbol: 'AED ', locale: 'en-AE' },
   PLN: { symbol: 'zł', locale: 'pl-PL', suffix: true },
+  BGN: { symbol: 'лв', locale: 'bg-BG', suffix: true },
+  CZK: { symbol: 'Kč', locale: 'cs-CZ', suffix: true },
+  DKK: { symbol: 'kr', locale: 'da-DK', suffix: true },
+  HUF: { symbol: 'Ft', locale: 'hu-HU', suffix: true },
+  RON: { symbol: 'lei', locale: 'ro-RO', suffix: true },
+  SEK: { symbol: 'kr', locale: 'sv-SE', suffix: true },
 };
 
 const formatIndianWord = (price: number) => {
@@ -35,7 +41,10 @@ export const formatPrice = (price: number, currency: string = 'USD'): string => 
 };
 
 // Rough static FX rates to USD — for cross-currency budget-range filtering only, not financial advice.
-export const FX_TO_USD: Record<string, number> = { USD: 1, EUR: 1.09, GBP: 1.27, PLN: 0.25, AED: 0.27, INR: 0.012 };
+export const FX_TO_USD: Record<string, number> = {
+  USD: 1, EUR: 1.09, GBP: 1.27, PLN: 0.25, AED: 0.27, INR: 0.012,
+  BGN: 0.56, CZK: 0.044, DKK: 0.145, HUF: 0.0028, RON: 0.22, SEK: 0.095,
+};
 export const toUSD = (price: number, currency: string = 'USD'): number => price * (FX_TO_USD[currency] ?? 1);
 // Legacy EUR-basis helpers, kept in case anything else still references them.
 export const FX_TO_EUR: Record<string, number> = { EUR: 1, USD: 0.92, GBP: 1.17, PLN: 0.23, AED: 0.25, INR: 0.0105 };
@@ -77,13 +86,46 @@ const makeSeries = (base: number, drift: number, seedOffset: number): number[] =
   return points;
 };
 
+// All 27 EU member states, plus India, the United States, the UAE and the UK
+// (the last kept alongside the EU block since it's already got a live London
+// listing in the seed catalog below — flag as a follow-up if it should come out).
 export const COUNTRIES: Country[] = [
+  // ---------- European Union (27) ----------
   {
-    code: 'DE', name: 'Germany', flag: '🇩🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Berlin', pricePerUnit: 5450, yoyChange: 3.2, series: makeSeries(5250, 18, 0) },
-      { city: 'Munich', pricePerUnit: 9200, yoyChange: 2.1, series: makeSeries(8950, 21, 1) },
-    ],
+    code: 'AT', name: 'Austria', flag: '🇦🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Vienna', pricePerUnit: 5800, yoyChange: 2.4, series: makeSeries(5620, 15, 16) }],
+  },
+  {
+    code: 'BE', name: 'Belgium', flag: '🇧🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Brussels', pricePerUnit: 3400, yoyChange: 1.6, series: makeSeries(3320, 8, 17) }],
+  },
+  {
+    code: 'BG', name: 'Bulgaria', flag: '🇧🇬', currency: 'BGN', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Sofia', pricePerUnit: 2200, yoyChange: 8.9, series: makeSeries(1980, 20, 18) }],
+  },
+  {
+    code: 'HR', name: 'Croatia', flag: '🇭🇷', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Zagreb', pricePerUnit: 2600, yoyChange: 5.2, series: makeSeries(2440, 14, 19) }],
+  },
+  {
+    code: 'CY', name: 'Cyprus', flag: '🇨🇾', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Nicosia', pricePerUnit: 2400, yoyChange: 4.1, series: makeSeries(2280, 11, 20) }],
+  },
+  {
+    code: 'CZ', name: 'Czechia', flag: '🇨🇿', currency: 'CZK', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Prague', pricePerUnit: 115000, yoyChange: 3.7, series: makeSeries(110000, 480, 21) }],
+  },
+  {
+    code: 'DK', name: 'Denmark', flag: '🇩🇰', currency: 'DKK', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Copenhagen', pricePerUnit: 48000, yoyChange: 2.9, series: makeSeries(46500, 130, 22) }],
+  },
+  {
+    code: 'EE', name: 'Estonia', flag: '🇪🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Tallinn', pricePerUnit: 3200, yoyChange: 3.4, series: makeSeries(3080, 10, 23) }],
+  },
+  {
+    code: 'FI', name: 'Finland', flag: '🇫🇮', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Helsinki', pricePerUnit: 5200, yoyChange: -0.8, series: makeSeries(5280, -8, 24) }],
   },
   {
     code: 'FR', name: 'France', flag: '🇫🇷', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
@@ -93,6 +135,69 @@ export const COUNTRIES: Country[] = [
     ],
   },
   {
+    code: 'DE', name: 'Germany', flag: '🇩🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [
+      { city: 'Berlin', pricePerUnit: 5450, yoyChange: 3.2, series: makeSeries(5250, 18, 0) },
+      { city: 'Munich', pricePerUnit: 9200, yoyChange: 2.1, series: makeSeries(8950, 21, 1) },
+    ],
+  },
+  {
+    code: 'GR', name: 'Greece', flag: '🇬🇷', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Athens', pricePerUnit: 2600, yoyChange: 9.8, series: makeSeries(2320, 26, 25) }],
+  },
+  {
+    code: 'HU', name: 'Hungary', flag: '🇭🇺', currency: 'HUF', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Budapest', pricePerUnit: 750000, yoyChange: 5.5, series: makeSeries(710000, 3600, 26) }],
+  },
+  {
+    code: 'IE', name: 'Ireland', flag: '🇮🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Dublin', pricePerUnit: 5800, yoyChange: 6.1, series: makeSeries(5480, 27, 27) }],
+  },
+  {
+    code: 'IT', name: 'Italy', flag: '🇮🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Milan', pricePerUnit: 5350, yoyChange: 3.8, series: makeSeries(5150, 17, 7) }],
+  },
+  {
+    code: 'LV', name: 'Latvia', flag: '🇱🇻', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Riga', pricePerUnit: 2100, yoyChange: 2.7, series: makeSeries(2040, 6, 28) }],
+  },
+  {
+    code: 'LT', name: 'Lithuania', flag: '🇱🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Vilnius', pricePerUnit: 2400, yoyChange: 4.4, series: makeSeries(2280, 12, 29) }],
+  },
+  {
+    code: 'LU', name: 'Luxembourg', flag: '🇱🇺', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Luxembourg City', pricePerUnit: 9500, yoyChange: -2.1, series: makeSeries(9750, -22, 30) }],
+  },
+  {
+    code: 'MT', name: 'Malta', flag: '🇲🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Valletta', pricePerUnit: 4200, yoyChange: 5.9, series: makeSeries(3960, 22, 31) }],
+  },
+  {
+    code: 'NL', name: 'Netherlands', flag: '🇳🇱', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Amsterdam', pricePerUnit: 7100, yoyChange: 4.3, series: makeSeries(6800, 26, 6) }],
+  },
+  {
+    code: 'PL', name: 'Poland', flag: '🇵🇱', currency: 'PLN', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Warsaw', pricePerUnit: 16800, yoyChange: 8.4, series: makeSeries(15500, 108, 9) }],
+  },
+  {
+    code: 'PT', name: 'Portugal', flag: '🇵🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Lisbon', pricePerUnit: 4800, yoyChange: 7.1, series: makeSeries(4450, 30, 8) }],
+  },
+  {
+    code: 'RO', name: 'Romania', flag: '🇷🇴', currency: 'RON', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Bucharest', pricePerUnit: 8700, yoyChange: 6.6, series: makeSeries(8100, 50, 32) }],
+  },
+  {
+    code: 'SK', name: 'Slovakia', flag: '🇸🇰', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Bratislava', pricePerUnit: 3100, yoyChange: 3.0, series: makeSeries(3010, 8, 33) }],
+  },
+  {
+    code: 'SI', name: 'Slovenia', flag: '🇸🇮', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Ljubljana', pricePerUnit: 3400, yoyChange: 4.8, series: makeSeries(3220, 16, 34) }],
+  },
+  {
     code: 'ES', name: 'Spain', flag: '🇪🇸', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
     cities: [
       { city: 'Barcelona', pricePerUnit: 4650, yoyChange: 5.6, series: makeSeries(4380, 24, 4) },
@@ -100,34 +205,14 @@ export const COUNTRIES: Country[] = [
     ],
   },
   {
-    code: 'NL', name: 'Netherlands', flag: '🇳🇱', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Amsterdam', pricePerUnit: 7100, yoyChange: 4.3, series: makeSeries(6800, 26, 6) },
-    ],
+    code: 'SE', name: 'Sweden', flag: '🇸🇪', currency: 'SEK', region: 'Europe', unitLabel: 'm²',
+    cities: [{ city: 'Stockholm', pricePerUnit: 85000, yoyChange: 1.2, series: makeSeries(84000, 100, 35) }],
   },
-  {
-    code: 'IT', name: 'Italy', flag: '🇮🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Milan', pricePerUnit: 5350, yoyChange: 3.8, series: makeSeries(5150, 17, 7) },
-    ],
-  },
-  {
-    code: 'PT', name: 'Portugal', flag: '🇵🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Lisbon', pricePerUnit: 4800, yoyChange: 7.1, series: makeSeries(4450, 30, 8) },
-    ],
-  },
-  {
-    code: 'PL', name: 'Poland', flag: '🇵🇱', currency: 'PLN', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Warsaw', pricePerUnit: 16800, yoyChange: 8.4, series: makeSeries(15500, 108, 9) },
-    ],
-  },
+
+  // ---------- Beyond the EU ----------
   {
     code: 'GB', name: 'United Kingdom', flag: '🇬🇧', currency: 'GBP', region: 'Europe', unitLabel: 'sqft',
-    cities: [
-      { city: 'London', pricePerUnit: 850, yoyChange: -0.6, series: makeSeries(862, -6, 10) },
-    ],
+    cities: [{ city: 'London', pricePerUnit: 850, yoyChange: -0.6, series: makeSeries(862, -6, 10) }],
   },
   {
     code: 'US', name: 'United States', flag: '🇺🇸', currency: 'USD', region: 'North America', unitLabel: 'sqft',
@@ -138,9 +223,7 @@ export const COUNTRIES: Country[] = [
   },
   {
     code: 'AE', name: 'UAE', flag: '🇦🇪', currency: 'AED', region: 'Middle East', unitLabel: 'sqft',
-    cities: [
-      { city: 'Dubai', pricePerUnit: 1780, yoyChange: 11.2, series: makeSeries(1580, 60, 13) },
-    ],
+    cities: [{ city: 'Dubai', pricePerUnit: 1780, yoyChange: 11.2, series: makeSeries(1580, 60, 13) }],
   },
   {
     code: 'IN', name: 'India', flag: '🇮🇳', currency: 'INR', region: 'Asia', unitLabel: 'sqft',

@@ -3,36 +3,35 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Full creative reset (per explicit request): deep forest green + warm bronze
-   in place of the old blue/white palette, and an editorial serif/sans pairing
-   in place of the old single-typeface look. Every brand-* / stone-* utility
-   used across the app inherits from these tokens, so this one file recolors
-   and retypesets the entire site without touching component markup. */
+/* Color theme: deep royal blue + warm gold accent, replacing the earlier forest
+   green reset. Editorial serif/sans pairing (Fraunces/Manrope) unchanged. Every
+   brand-* / stone-* utility used across the app inherits from these tokens, so
+   this one file recolors the entire site without touching component markup. */
 @theme {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Fraunces", ui-serif, Georgia, serif;
   --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
 
-  --color-brand-primary: #0B6E4F;
-  --color-brand-secondary: #073B2B;
+  --color-brand-primary: #1D46B0;
+  --color-brand-secondary: #12296A;
   --color-brand-accent: #C9A15A;
   --color-paper: #FFFCF7;
   --color-ink: #16211C;
 
-  /* Deep forest green + bronze accent scale — replaces the old blue theme */
-  --color-brand-50: #ECF7F1;
-  --color-brand-100: #D2ECDE;
-  --color-brand-150: #B9E1CB;
-  --color-brand-200: #9FD6B8;
-  --color-brand-300: #6CBF93;
-  --color-brand-400: #39A76E;
-  --color-brand-500: #16874F;
-  --color-brand-600: #0B6E4F;
-  --color-brand-650: #0A6047;
-  --color-brand-700: #0A4F3C;
-  --color-brand-800: #0A3D30;
-  --color-brand-900: #082D25;
-  --color-brand-950: #051D18;
+  /* Deep royal blue + warm gold accent scale */
+  --color-brand-50: #EEF3FC;
+  --color-brand-100: #D2E0F7;
+  --color-brand-150: #B6CDF2;
+  --color-brand-200: #99B9EC;
+  --color-brand-300: #6191E0;
+  --color-brand-400: #3D71D6;
+  --color-brand-500: #2557C9;
+  --color-brand-600: #1D46B0;
+  --color-brand-650: #1A3E9D;
+  --color-brand-700: #163385;
+  --color-brand-800: #12296A;
+  --color-brand-900: #0D1E4D;
+  --color-brand-950: #081334;
 
   /* Warm stone scale — replaces the old cool slate/blue-gray neutrals */
   --color-stone-50: #FAF9F6;
@@ -81,7 +80,7 @@
     --card-foreground: #1A1714;
     --popover: #FFFCF7;
     --popover-foreground: #1A1714;
-    --primary: #0B6E4F;
+    --primary: #1D46B0;
     --primary-foreground: #FFFFFF;
     --secondary: #F3F1EB;
     --secondary-foreground: #1A1714;
@@ -93,7 +92,7 @@
     --destructive-foreground: #FFFFFF;
     --border: #E1DBCE;
     --input: #E1DBCE;
-    --ring: #0B6E4F;
+    --ring: #1D46B0;
     --radius: 0.75rem;
 }
 
@@ -121,7 +120,7 @@
   }
 
   .neon-glow {
-    @apply shadow-[0_0_20px_rgba(30,95,224,0.15)];
+    @apply shadow-[0_0_20px_rgba(29,70,176,0.18)];
   }
 
   .tech-grid {
