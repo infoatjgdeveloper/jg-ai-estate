@@ -108,7 +108,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { CURRENCY_META, formatPrice, formatPriceFull, toUSD, COUNTRIES, GLOBAL_SEED_PROJECTS, type Country } from '@/lib/global';
+import { CURRENCY_META, formatPrice, formatPriceFull, toUSD, COUNTRIES, GLOBAL_SEED_PROJECTS, DEVELOPER_NAME_MIGRATIONS, type Country } from '@/lib/global';
 import MapView from '@/components/MapView';
 
 // --- Types ---
@@ -1516,83 +1516,127 @@ const Dashboard = () => {
     }
   }, [profile]);
 
+  // Builds a Project doc (matching the seedData shape) plus its 20 sample units and stages
+  // both onto the given batch. Shared by the initial catalog seed and the real-builder-data
+  // migration below so a new project is always created the same way.
+  const stageProjectOnBatch = useCallback((batch: ReturnType<typeof writeBatch>, p: (typeof GLOBAL_SEED_PROJECTS)[number]) => {
+    const projectDoc: Omit<Project, 'id'> = {
+      name: p.name,
+      description: p.description,
+      location: p.location,
+      city: p.city,
+      country: p.country,
+      countryCode: p.countryCode,
+      region: p.region,
+      totalUnits: p.totalUnits,
+      basePrice: p.basePrice,
+      currency: p.currency,
+      listingType: p.listingType || 'sale',
+      imageUrl: p.imageUrl,
+      images: p.images,
+      lat: p.lat,
+      lng: p.lng,
+      developerId: "system",
+      developerName: p.developerName,
+      reraId: p.reraId,
+      verified: p.verified,
+      aiValuation: Math.round(p.basePrice * 1.06),
+      marketTrend: p.marketTrend,
+      bhkOptions: p.bhkOptions,
+      areaRange: p.areaRange,
+      constructionStatus: p.constructionStatus,
+      rentalYield: p.rentalYield,
+      aiScore: p.aiScore,
+      amenities: p.amenities,
+      landmarks: p.landmarks,
+    };
+
+    const pRef = doc(collection(db, 'projects'));
+    batch.set(pRef, { ...projectDoc, createdAt: serverTimestamp() });
+
+    // Unit increment/booking amounts scale proportionally to basePrice so they make
+    // sense across wildly different currencies (EUR/USD/GBP/PLN/AED/INR).
+    const increment = Math.max(1000, Math.round(p.basePrice * 0.003));
+    const bookingAmount = Math.max(1000, Math.round(p.basePrice * 0.02));
+
+    for (let i = 1; i <= 20; i++) {
+      const uRef = doc(collection(db, `projects/${pRef.id}/units`));
+      const bhkType = i <= 6 ? "2 BR" : i <= 14 ? "3 BR" : i <= 18 ? "4 BR" : "Penthouse";
+      const areaSqft = bhkType === "2 BR" ? 1250 + i * 15 : bhkType === "3 BR" ? 1900 + i * 20 : bhkType === "4 BR" ? 2950 + i * 30 : 5400 + i * 50;
+      const viewTag = i % 4 === 0 ? "Skyline & City View" : i % 4 === 1 ? "Courtyard & Garden Deck" : i % 4 === 2 ? "East-Facing Entrance" : "Prime Street View";
+
+      batch.set(uRef, {
+        projectId: pRef.id,
+        unitNumber: `A-${i.toString().padStart(3, '0')}`,
+        status: i % 7 === 0 ? 'resale' : 'available',
+        price: p.basePrice + (i * increment),
+        bookingAmount,
+        lastValuation: Math.round(p.basePrice + (i * increment * 1.05)),
+        currency: p.currency,
+        bhkType,
+        areaSqft,
+        viewTag
+      });
+    }
+  }, []);
+
   // --- Seed Data Function: seeds the global catalog (Europe, North America, Asia, Middle East) ---
   const seedData = useCallback(async () => {
     const projectsSnap = await getDocs(collection(db, 'projects'));
     if (projectsSnap.empty) {
       const batch = writeBatch(db);
-
-      const sampleProjects: Omit<Project, 'id'>[] = GLOBAL_SEED_PROJECTS.map((p) => ({
-        name: p.name,
-        description: p.description,
-        location: p.location,
-        city: p.city,
-        country: p.country,
-        countryCode: p.countryCode,
-        region: p.region,
-        totalUnits: p.totalUnits,
-        basePrice: p.basePrice,
-        currency: p.currency,
-        listingType: p.listingType || 'sale',
-        imageUrl: p.imageUrl,
-        images: p.images,
-        lat: p.lat,
-        lng: p.lng,
-        developerId: "system",
-        developerName: p.developerName,
-        reraId: p.reraId,
-        verified: p.verified,
-        aiValuation: Math.round(p.basePrice * 1.06),
-        marketTrend: p.marketTrend,
-        bhkOptions: p.bhkOptions,
-        areaRange: p.areaRange,
-        constructionStatus: p.constructionStatus,
-        rentalYield: p.rentalYield,
-        aiScore: p.aiScore,
-        amenities: p.amenities,
-        landmarks: p.landmarks,
-      }));
-
-
-      for (const p of sampleProjects) {
-        const pRef = doc(collection(db, 'projects'));
-        batch.set(pRef, { ...p, createdAt: serverTimestamp() });
-
-        // Unit increment/booking amounts scale proportionally to basePrice so they make
-        // sense across wildly different currencies (EUR/USD/GBP/PLN/AED/INR).
-        const increment = Math.max(1000, Math.round(p.basePrice * 0.003));
-        const bookingAmount = Math.max(1000, Math.round(p.basePrice * 0.02));
-
-        for (let i = 1; i <= 20; i++) {
-          const uRef = doc(collection(db, `projects/${pRef.id}/units`));
-          const bhkType = i <= 6 ? "2 BR" : i <= 14 ? "3 BR" : i <= 18 ? "4 BR" : "Penthouse";
-          const areaSqft = bhkType === "2 BR" ? 1250 + i * 15 : bhkType === "3 BR" ? 1900 + i * 20 : bhkType === "4 BR" ? 2950 + i * 30 : 5400 + i * 50;
-          const viewTag = i % 4 === 0 ? "Skyline & City View" : i % 4 === 1 ? "Courtyard & Garden Deck" : i % 4 === 2 ? "East-Facing Entrance" : "Prime Street View";
-
-          batch.set(uRef, {
-            projectId: pRef.id,
-            unitNumber: `A-${i.toString().padStart(3, '0')}`,
-            status: i % 7 === 0 ? 'resale' : 'available',
-            price: p.basePrice + (i * increment),
-            bookingAmount,
-            lastValuation: Math.round(p.basePrice + (i * increment * 1.05)),
-            currency: p.currency,
-            bhkType,
-            areaSqft,
-            viewTag
-          });
-        }
+      for (const p of GLOBAL_SEED_PROJECTS) {
+        stageProjectOnBatch(batch, p);
       }
       await batch.commit();
     }
-  }, []);
+  }, [stageProjectOnBatch]);
+
+  // --- Real Builder Data Migration ---
+  // The catalog above originally shipped with a mix of real (e.g. Lodha Group, Prestige
+  // Group) and placeholder/fictional developer names (e.g. "Berlin Urban Living"). Those
+  // placeholders have since been replaced with real, web-verified development companies in
+  // global.ts, and 3 real Ahmedabad/Gujarat projects were added. Because seedData() above
+  // only writes when the collection is empty, a live Firestore instance that was already
+  // seeded won't pick up those source changes on its own — this migration patches it in
+  // place: it renames any already-seeded project's developerName from the old placeholder to
+  // the real one, and adds any newly-introduced seed projects (matched by name) that aren't
+  // in the live collection yet. Runs once per session for any signed-in user, same trigger
+  // model as seedData().
+  const migrateRealBuilderData = useCallback(async () => {
+    const projectsSnap = await getDocs(collection(db, 'projects'));
+    if (projectsSnap.empty) return; // nothing to migrate yet — seedData will write the current (already-real) names
+
+    const existingNames = new Set(projectsSnap.docs.map((d) => (d.data() as Project).name));
+    const batch = writeBatch(db);
+    let hasWrites = false;
+
+    for (const docSnap of projectsSnap.docs) {
+      const data = docSnap.data() as Project;
+      const realName = DEVELOPER_NAME_MIGRATIONS[data.developerName];
+      if (realName && realName !== data.developerName) {
+        batch.update(docSnap.ref, { developerName: realName });
+        hasWrites = true;
+      }
+    }
+
+    for (const p of GLOBAL_SEED_PROJECTS) {
+      if (p.city === 'Ahmedabad' && !existingNames.has(p.name)) {
+        stageProjectOnBatch(batch, p);
+        hasWrites = true;
+      }
+    }
+
+    if (hasWrites) await batch.commit();
+  }, [stageProjectOnBatch]);
 
   useEffect(() => {
     // Any signed-in user can trigger the initial catalog seed if it's empty (public demo)
     if (user) {
       seedData();
+      migrateRealBuilderData();
     }
-  }, [seedData, profile, user]);
+  }, [seedData, migrateRealBuilderData, profile, user]);
 
   useEffect(() => {
     const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));

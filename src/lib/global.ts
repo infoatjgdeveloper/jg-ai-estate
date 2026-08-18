@@ -276,6 +276,34 @@ const CITY_COORDS: Record<string, [number, number]> = {
   'London': [51.5072, -0.1276], 'New York': [40.7128, -74.0060],
   'Miami': [25.7617, -80.1918], 'Dubai': [25.2048, 55.2708],
   'Mumbai': [19.0760, 72.8777], 'Bengaluru': [12.9716, 77.5946],
+  'Ahmedabad': [23.0225, 72.5714],
+};
+
+// Real, web-verified developer names, mapped from the earlier placeholder/fictional
+// names that shipped in the original demo catalog. Used to (a) seed fresh Firestore
+// instances with real names from day one, and (b) patch already-seeded live
+// instances in place (see migrateRealBuilderData() in App.tsx) so existing
+// deployments pick up the correction without a manual database reset.
+// Sources: ensun.io/researchgermany.com (Germany), FPI/Cogedim/Bouygues Immobilier
+// coverage (France), kredium.com (Spain), egeriagroup.com (Netherlands), COIMA
+// (Milan), Vanguard Properties (Lisbon), Echo Investment (Warsaw), Ballymore Group
+// (Nine Elms, London), Related Companies (Hudson Yards, NYC), Related Group
+// (Brickell, Miami), Nakheel (Palm Jumeirah, Dubai).
+export const DEVELOPER_NAME_MIGRATIONS: Record<string, string> = {
+  'Berlin Urban Living': 'Bauwerk',
+  'Bayern Real Group': 'DEMOS Wohnbau',
+  'Groupe Lumière Immobilier': 'Cogedim',
+  'Rhône Loft Developers': 'Bouygues Immobilier',
+  'Costa Urban Homes': 'AEDAS Homes',
+  'Madrid Capital Homes': 'Pryconsa',
+  'NoordWonen Development': 'AM',
+  'Milano Design Homes': 'COIMA',
+  'Tejo Capital Real Estate': 'Vanguard Properties',
+  'Wisła Development Group': 'Echo Investment',
+  'Thames Regeneration Partners': 'Ballymore Group',
+  'Related Skyline Partners': 'Related Companies',
+  'Bayview Development Corp': 'Related Group',
+  'Palm Coastal Developers': 'Nakheel',
 };
 
 // Small pool of interior/exterior stock photos reused to build a photo-grid gallery per listing.
@@ -296,7 +324,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Spree Terraces', description: 'Riverside new-build apartments in Friedrichshain with A+ energy rating, floor heating, and private balconies overlooking the Spree.',
     location: 'Friedrichshain, Berlin', city: 'Berlin', country: 'Germany', countryCode: 'DE', currency: 'EUR', region: 'Europe',
-    totalUnits: 64, basePrice: 620000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Berlin Urban Living',
+    totalUnits: 64, basePrice: 620000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Bauwerk',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '68 - 118 m²',
     constructionStatus: 'Under Construction', rentalYield: 3.6, aiScore: 90,
     amenities: ['A+ Energy Rating', 'Underfloor Heating', 'Bike Storage', 'Riverside Balcony'],
@@ -305,7 +333,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Maximilian Residenz', description: 'Altbau-style new construction near the English Garden, blending classic Munich facades with modern smart-home interiors.',
     location: 'Schwabing, Munich', city: 'Munich', country: 'Germany', countryCode: 'DE', currency: 'EUR', region: 'Europe',
-    totalUnits: 40, basePrice: 980000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Bayern Real Group',
+    totalUnits: 40, basePrice: 980000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'DEMOS Wohnbau',
     verified: true, marketTrend: 'Stable', bhkOptions: ['3 BR', '4 BR'], areaRange: '95 - 165 m²',
     constructionStatus: 'Ready to Move', rentalYield: 3.1, aiScore: 93,
     amenities: ['Smart Home', 'Parkside Location', 'Concierge', 'Underground Parking'],
@@ -314,7 +342,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Haussmann Lumière', description: 'Restored Haussmannian building in the 9th arrondissement, high ceilings, herringbone parquet, walkable to Opéra.',
     location: '9th Arrondissement, Paris', city: 'Paris', country: 'France', countryCode: 'FR', currency: 'EUR', region: 'Europe',
-    totalUnits: 22, basePrice: 1150000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Groupe Lumière Immobilier',
+    totalUnits: 22, basePrice: 1150000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Cogedim',
     verified: true, marketTrend: 'Bearish', bhkOptions: ['2 BR', '3 BR'], areaRange: '58 - 105 m²',
     constructionStatus: 'Ready to Move', rentalYield: 2.9, aiScore: 88,
     amenities: ['Herringbone Parquet', 'High Ceilings', 'Concierge (Gardien)', 'Elevator'],
@@ -323,7 +351,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Presqu\'île Loft District', description: 'Converted industrial lofts on the Presqu\'île peninsula, exposed brick, walkable riverside city center.',
     location: 'Presqu\'île, Lyon', city: 'Lyon', country: 'France', countryCode: 'FR', currency: 'EUR', region: 'Europe',
-    totalUnits: 30, basePrice: 385000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Rhône Loft Developers',
+    totalUnits: 30, basePrice: 385000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Bouygues Immobilier',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '45 - 80 m²',
     constructionStatus: 'Ready to Move', rentalYield: 4.2, aiScore: 85,
     amenities: ['Exposed Brick Loft', 'Riverside Walk', 'Bike Path Access'],
@@ -332,7 +360,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Eixample Terraza', description: 'Modernist-block apartments in the Eixample grid, private terrace, steps from Sagrada Família.',
     location: 'Eixample, Barcelona', city: 'Barcelona', country: 'Spain', countryCode: 'ES', currency: 'EUR', region: 'Europe',
-    totalUnits: 48, basePrice: 495000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Costa Urban Homes',
+    totalUnits: 48, basePrice: 495000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'AEDAS Homes',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '72 - 130 m²',
     constructionStatus: 'Under Construction', rentalYield: 4.8, aiScore: 91,
     amenities: ['Private Terrace', 'Rooftop Pool', 'Solar Panels', 'Communal Garden'],
@@ -341,7 +369,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Salamanca Prime', description: 'Prime-district Madrid residences with polished stone lobbies and 24-hour concierge, near Retiro Park.',
     location: 'Salamanca, Madrid', city: 'Madrid', country: 'Spain', countryCode: 'ES', currency: 'EUR', region: 'Europe',
-    totalUnits: 36, basePrice: 720000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Madrid Capital Homes',
+    totalUnits: 36, basePrice: 720000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Pryconsa',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['3 BR', '4 BR'], areaRange: '110 - 180 m²',
     constructionStatus: 'Ready to Move', rentalYield: 4.1, aiScore: 92,
     amenities: ['24h Concierge', 'Marble Lobby', 'Retiro Park Views', 'Private Gym'],
@@ -350,7 +378,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Canal Zicht Residences', description: 'Canal-front new-build in Amsterdam Noord with sustainable timber construction and roof terraces.',
     location: 'Amsterdam Noord', city: 'Amsterdam', country: 'Netherlands', countryCode: 'NL', currency: 'EUR', region: 'Europe',
-    totalUnits: 52, basePrice: 645000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'NoordWonen Development',
+    totalUnits: 52, basePrice: 645000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'AM',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '70 - 120 m²',
     constructionStatus: 'Pre-Launch', rentalYield: 3.9, aiScore: 89,
     amenities: ['Canal Views', 'Timber Sustainable Build', 'Roof Terrace', 'EV Charging'],
@@ -359,7 +387,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Navigli Atelier', description: 'Design-forward residences along the Navigli canals, close to Milan\'s fashion and design district.',
     location: 'Navigli, Milan', city: 'Milan', country: 'Italy', countryCode: 'IT', currency: 'EUR', region: 'Europe',
-    totalUnits: 28, basePrice: 560000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Milano Design Homes',
+    totalUnits: 28, basePrice: 560000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'COIMA',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '55 - 95 m²',
     constructionStatus: 'Ready to Move', rentalYield: 4.0, aiScore: 87,
     amenities: ['Canal-side Terrace', 'Designer Fit-out', 'Concierge'],
@@ -368,7 +396,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Tejo Vista Residences', description: 'Riverfront Lisbon apartments with panoramic Tejo views, growing golden-visa demand district.',
     location: 'Parque das Nações, Lisbon', city: 'Lisbon', country: 'Portugal', countryCode: 'PT', currency: 'EUR', region: 'Europe',
-    totalUnits: 60, basePrice: 415000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Tejo Capital Real Estate',
+    totalUnits: 60, basePrice: 415000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Vanguard Properties',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '75 - 125 m²',
     constructionStatus: 'Under Construction', rentalYield: 5.1, aiScore: 90,
     amenities: ['River Views', 'Rooftop Pool', 'Co-working Lounge', 'EV Charging'],
@@ -377,7 +405,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Wisła Bulwary', description: 'Riverside Warsaw development on the Wisła boulevards, fast-growing district with strong rental demand.',
     location: 'Powiśle, Warsaw', city: 'Warsaw', country: 'Poland', countryCode: 'PL', currency: 'PLN', region: 'Europe',
-    totalUnits: 70, basePrice: 2350000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Wisła Development Group',
+    totalUnits: 70, basePrice: 2350000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Echo Investment',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '58 - 98 m²',
     constructionStatus: 'Under Construction', rentalYield: 5.6, aiScore: 88,
     amenities: ['River Boulevard Access', 'Underground Parking', 'Playground', 'Bike Storage'],
@@ -386,7 +414,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Riverside Wharf Collection', description: 'South Bank riverside development with panoramic Thames views, part of a major regeneration zone.',
     location: 'Nine Elms, London', city: 'London', country: 'United Kingdom', countryCode: 'GB', currency: 'GBP', region: 'Europe',
-    totalUnits: 90, basePrice: 780000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Thames Regeneration Partners',
+    totalUnits: 90, basePrice: 780000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Ballymore Group',
     verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '520 - 1,150 sqft',
     constructionStatus: 'Under Construction', rentalYield: 4.4, aiScore: 89,
     amenities: ['Thames Views', 'Concierge', 'Residents Gym', 'Private Cinema Room'],
@@ -395,7 +423,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Hudson Yards Sky Collection', description: 'Full-floor residences above the High Line with skyline views and 5-star hotel-style amenities.',
     location: 'Hudson Yards, New York', city: 'New York', country: 'United States', countryCode: 'US', currency: 'USD', region: 'North America',
-    totalUnits: 54, basePrice: 2450000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Related Skyline Partners',
+    totalUnits: 54, basePrice: 2450000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Related Companies',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR', 'Penthouse'], areaRange: '1,100 - 3,400 sqft',
     constructionStatus: 'Ready to Move', rentalYield: 3.4, aiScore: 95,
     amenities: ['High Line Access', 'Private Cinema', '75ft Pool', 'Wellness Spa'],
@@ -404,7 +432,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Brickell Bayview Towers', description: 'Waterfront Miami tower with resort-style amenities and direct Biscayne Bay views.',
     location: 'Brickell, Miami', city: 'Miami', country: 'United States', countryCode: 'US', currency: 'USD', region: 'North America',
-    totalUnits: 120, basePrice: 890000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Bayview Development Corp',
+    totalUnits: 120, basePrice: 890000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Related Group',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '1,050 - 2,200 sqft',
     constructionStatus: 'Under Construction', rentalYield: 4.9, aiScore: 90,
     amenities: ['Bay Views', 'Marina Access', 'Infinity Pool', 'Valet Parking'],
@@ -413,7 +441,7 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
     name: 'Palm Jumeirah Vista', description: 'Beachfront branded residences on the Palm with private beach access and skyline views of the Dubai coastline.',
     location: 'Palm Jumeirah, Dubai', city: 'Dubai', country: 'UAE', countryCode: 'AE', currency: 'AED', region: 'Middle East',
-    totalUnits: 80, basePrice: 3200000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Palm Coastal Developers',
+    totalUnits: 80, basePrice: 3200000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Nakheel',
     verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR', 'Penthouse'], areaRange: '1,400 - 4,800 sqft',
     constructionStatus: 'Under Construction', rentalYield: 6.8, aiScore: 94,
     amenities: ['Private Beach', 'Infinity Pool', 'Concierge', 'Valet & Security'],
@@ -436,6 +464,34 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
     constructionStatus: 'Ready to Move', rentalYield: 5.2, aiScore: 91,
     amenities: ['Rooftop Jogging Route', 'Smart Home Automation', 'Heated Pool'],
     landmarks: [{ name: 'Koramangala Club', distance: '3 mins' }, { name: 'Forum Mall', distance: '5 mins' }],
+  },
+  // --- Gujarat / Ahmedabad, India — real, web-verified developers and project names ---
+  {
+    name: 'Shantigram - La Marina', description: 'Waterfront residences within Shantigram, a 600-acre integrated township on SG Highway between Ahmedabad and Gandhinagar, developed by Adani Realty.',
+    location: 'Shantigram, SG Highway, Ahmedabad', city: 'Ahmedabad', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
+    totalUnits: 96, basePrice: 9500000, imageUrl: img('1600607687939-ce8a6c25118c'), developerName: 'Adani Realty',
+    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR', '4 BR'], areaRange: '1,250 - 2,800 sqft',
+    constructionStatus: 'Under Construction', rentalYield: 4.3, aiScore: 92,
+    amenities: ['Township Clubhouse', 'Landscaped Boulevards', 'Lake-Facing Decks', '24x7 Security'],
+    landmarks: [{ name: 'SG Highway', distance: '2 mins' }, { name: 'Gandhinagar', distance: '15 mins' }],
+  },
+  {
+    name: 'Godrej Garden City', description: "Ahmedabad's first self-sufficient integrated township within AMC limits, at Jagatpur, developed by Godrej Properties.",
+    location: 'Jagatpur, Ahmedabad', city: 'Ahmedabad', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
+    totalUnits: 110, basePrice: 7200000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Godrej Properties',
+    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '1,050 - 2,100 sqft',
+    constructionStatus: 'Under Construction', rentalYield: 4.0, aiScore: 90,
+    amenities: ['Central Green Spine', 'Clubhouse', 'Sports Courts', 'School Within Township'],
+    landmarks: [{ name: 'Sabarmati Riverfront', distance: '12 mins' }, { name: 'Jagatpur Circle', distance: '3 mins' }],
+  },
+  {
+    name: 'Arvind Bel Air', description: 'Premium residences by Arvind SmartSpaces, the real estate arm of the Kasturbhai Lalbhai Group, in one of Ahmedabad\'s established western-corridor neighborhoods.',
+    location: 'Bopal, Ahmedabad', city: 'Ahmedabad', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
+    totalUnits: 72, basePrice: 6400000, imageUrl: img('1616486338812-3dadae4b4ace'), developerName: 'Arvind SmartSpaces',
+    verified: true, marketTrend: 'Stable', bhkOptions: ['2 BR', '3 BR'], areaRange: '980 - 1,850 sqft',
+    constructionStatus: 'Ready to Move', rentalYield: 3.8, aiScore: 89,
+    amenities: ['Landscaped Podium Garden', 'Clubhouse', 'Multipurpose Hall', 'Kids\' Play Area'],
+    landmarks: [{ name: 'SP Ring Road', distance: '5 mins' }, { name: 'Bopal-Ghuma Road', distance: '2 mins' }],
   },
 ];
 
