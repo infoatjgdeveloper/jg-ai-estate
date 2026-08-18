@@ -3,8 +3,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Color theme: deep royal blue + warm gold accent, replacing the earlier forest
-   green reset. Editorial serif/sans pairing (Fraunces/Manrope) unchanged. Every
+/* Color theme: rich crimson red + warm gold accent, replacing the earlier royal
+   blue theme. Editorial serif/sans pairing (Fraunces/Manrope) unchanged. Every
    brand-* / stone-* utility used across the app inherits from these tokens, so
    this one file recolors the entire site without touching component markup. */
 @theme {
@@ -12,26 +12,26 @@
   --font-serif: "Fraunces", ui-serif, Georgia, serif;
   --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
 
-  --color-brand-primary: #1D46B0;
-  --color-brand-secondary: #12296A;
+  --color-brand-primary: #AF1D2E;
+  --color-brand-secondary: #69111B;
   --color-brand-accent: #C9A15A;
   --color-paper: #FFFCF7;
   --color-ink: #16211C;
 
-  /* Deep royal blue + warm gold accent scale */
-  --color-brand-50: #EEF3FC;
-  --color-brand-100: #D2E0F7;
-  --color-brand-150: #B6CDF2;
-  --color-brand-200: #99B9EC;
-  --color-brand-300: #6191E0;
-  --color-brand-400: #3D71D6;
-  --color-brand-500: #2557C9;
-  --color-brand-600: #1D46B0;
-  --color-brand-650: #1A3E9D;
-  --color-brand-700: #163385;
-  --color-brand-800: #12296A;
-  --color-brand-900: #0D1E4D;
-  --color-brand-950: #081334;
+  /* Rich crimson red + warm gold accent scale */
+  --color-brand-50: #FCEDEF;
+  --color-brand-100: #F8D3D7;
+  --color-brand-150: #F4BDC4;
+  --color-brand-200: #EF9FA8;
+  --color-brand-300: #E66574;
+  --color-brand-400: #DF3A4D;
+  --color-brand-500: #CA2135;
+  --color-brand-600: #AF1D2E;
+  --color-brand-650: #9A1928;
+  --color-brand-700: #841522;
+  --color-brand-800: #69111B;
+  --color-brand-900: #4B0C13;
+  --color-brand-950: #30080D;
 
   /* Warm stone scale — replaces the old cool slate/blue-gray neutrals */
   --color-stone-50: #FAF9F6;
