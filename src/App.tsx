@@ -6,6 +6,7 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useParams, useNavigate } from 'react-router-dom';
+import { motion, useInView } from 'framer-motion';
 import { AuthProvider, useAuth } from './AuthContext';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
 import { signInWithPopup, signOut } from 'firebase/auth';
@@ -294,6 +295,75 @@ const hashProjectId = (id: string) => {
 
 const getAgentForProject = (project: { id: string }): AgentProfile =>
   AGENT_ROSTER[hashProjectId(project.id) % AGENT_ROSTER.length];
+
+// --- Motion primitives — shared across the homepage so every section animates in
+// consistently on scroll, instead of one-off transitions bolted onto individual cards. ---
+
+// Fades + slides content up once as it scrolls into view.
+const Reveal: React.FC<{ children: React.ReactNode; delay?: number; className?: string; y?: number }> = ({ children, delay = 0, className, y = 28 }) => (
+  <motion.div
+    className={className}
+    initial={{ opacity: 0, y }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: '-80px' }}
+    transition={{ duration: 0.65, delay, ease: [0.21, 0.47, 0.32, 0.98] as const }}
+  >
+    {children}
+  </motion.div>
+);
+
+// Staggers a group of Reveal-style children — wrap a card grid in this and give each
+// card a matching index-based delay for a cascading entrance instead of all-at-once.
+const staggerContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 26 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] as const } },
+};
+
+// Animated count-up for stat numbers — parses a leading prefix (like "$") and trailing
+// suffix (like "+" or "%") out of the string and only animates the numeric middle.
+const CountUp: React.FC<{ value: string; duration?: number }> = ({ value, duration = 1.4 }) => {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const [display, setDisplay] = useState(0);
+  const match = value.match(/^([^\d]*)([\d,]+\.?\d*)(.*)$/);
+
+  useEffect(() => {
+    if (!isInView || !match) return;
+    const target = parseFloat(match[2].replace(/,/g, ''));
+    let startTime: number | null = null;
+    let raf: number;
+    const step = (t: number) => {
+      if (startTime === null) startTime = t;
+      const progress = Math.min((t - startTime) / (duration * 1000), 1);
+      setDisplay(target * (1 - Math.pow(1 - progress, 3)));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInView]);
+
+  if (!match) return <span ref={ref}>{value}</span>;
+  const [, prefix, numStr, suffix] = match;
+  const isInt = !numStr.includes('.');
+  const formatted = isInt ? Math.round(display).toLocaleString() : display.toFixed(1);
+  return <span ref={ref}>{prefix}{formatted}{suffix}</span>;
+};
+
+// Hero entrance — staggers each hero element in sequence on first paint (not
+// scroll-triggered, since the hero is already in view on load).
+const heroContainerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } },
+};
+const heroItemVariants = {
+  hidden: { opacity: 0, y: 22 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98] as const } },
+};
 
 // Rent listings show a monthly figure; sale listings show the abbreviated total price.
 const priceLabel = (basePrice: number, currency: string, listingType?: string) =>
@@ -1817,16 +1887,24 @@ const Dashboard = () => {
           blank canvas) while keeping the search bar as the primary action, not a scroll cue. */}
       <section className="relative pt-40 sm:pt-56 pb-20 sm:pb-32 px-4 sm:px-8 overflow-hidden">
         <div className="absolute inset-0">
-          <img
+          <motion.img
             src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=80"
             alt=""
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
+            initial={{ scale: 1.12 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 5, ease: 'easeOut' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-stone-950/85 via-stone-950/70 to-stone-950" />
         </div>
-        <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8 relative z-10">
-          <div className="flex flex-wrap items-center justify-center gap-2">
+        <motion.div
+          className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8 relative z-10"
+          variants={heroContainerVariants}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div variants={heroItemVariants} className="flex flex-wrap items-center justify-center gap-2">
             <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit">
               <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
               Live Across {COUNTRIES.length} Countries
@@ -1835,18 +1913,18 @@ const Dashboard = () => {
               <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 text-amber-400 fill-amber-400" />
               4.8 Rated · 2,300+ Closed Deals
             </Badge>
-          </div>
-          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-semibold text-white tracking-tight leading-[1.05]">
+          </motion.div>
+          <motion.h1 variants={heroItemVariants} className="font-serif text-4xl sm:text-6xl md:text-7xl font-semibold text-white tracking-tight leading-[1.05]">
             Buy, rent or sell property
             <br className="hidden sm:block" />
             <span className="text-brand-300">anywhere in the world.</span>
-          </h1>
-          <p className="text-base sm:text-xl text-white/75 max-w-2xl mx-auto font-medium leading-relaxed">
+          </motion.h1>
+          <motion.p variants={heroItemVariants} className="text-base sm:text-xl text-white/75 max-w-2xl mx-auto font-medium leading-relaxed">
             Verified listings, live market data and licensed payment processing — priced in local currency, wherever you're buying.
-          </p>
+          </motion.p>
 
           {/* Primary action: search, not scroll */}
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xl shadow-stone-200/50 p-3 sm:p-4 max-w-2xl mx-auto">
+          <motion.div variants={heroItemVariants} className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xl shadow-stone-200/50 p-3 sm:p-4 max-w-2xl mx-auto">
             <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl overflow-x-auto no-scrollbar mb-2 sm:mb-3">
               {([
                 { key: 'buy', label: 'Buy' },
@@ -1897,11 +1975,11 @@ const Dashboard = () => {
                 Search
               </Button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Trending cities — quick-select chips, like the "hot markets" pattern on
               every major portal. Pulls from the same YoY data driving the market index. */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+          <motion.div variants={heroItemVariants} className="flex flex-wrap items-center justify-center gap-2 pt-1">
             <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-white/50 mr-1">Trending:</span>
             {TOP_MOVERS.slice(0, 5).map((city) => (
               <button
@@ -1912,28 +1990,114 @@ const Dashboard = () => {
                 {city.city} <span className="text-brand-300 font-bold">+{city.yoyChange}%</span>
               </button>
             ))}
-          </div>
+          </motion.div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-white/50">
+          <motion.div variants={heroItemVariants} className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-white/50">
             <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-brand-300" /> ID-Verified Sellers</span>
             <span className="flex items-center gap-1.5"><Landmark className="w-3.5 h-3.5 text-brand-300" /> Licensed Payment Processors</span>
             <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-brand-300" /> Live Market Data</span>
-          </div>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* What is JG Estate — plain-language explanation of the product, placed right after
+          the hero so a first-time visitor understands what this is before anything else. */}
+      <section className="py-20 sm:py-32 px-4 sm:px-8 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <Reveal>
+            <div className="space-y-6 sm:space-y-8">
+              <p className="micro-label text-brand-600">What Is JG Estate</p>
+              <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight leading-tight">
+                One marketplace for every property, in every market you care about.
+              </h2>
+              <p className="text-sm sm:text-lg text-stone-500 font-medium leading-relaxed">
+                JG Estate connects verified buyers, renters, agents, developers and investors across {COUNTRIES.length} countries — one search, one login, one verification standard, wherever the property sits. No wiring money to a stranger, no guessing whether a listing is even real.
+              </p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-8 pt-2">
+                {[
+                  { icon: ShieldCheck, title: 'ID-Verified Sellers', copy: 'Every lister passes identity checks before a listing goes live.' },
+                  { icon: Globe, title: 'Global By Default', copy: 'One platform across every market, not a bolted-on country page.' },
+                  { icon: Landmark, title: 'Licensed Payments', copy: 'Reservations route through licensed processors, never held by us.' },
+                  { icon: TrendingUp, title: 'Live Market Data', copy: 'Real price trends and rental yields, not stale averages.' },
+                ].map((f, i) => (
+                  <motion.div
+                    key={f.title}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 0.5, delay: i * 0.08 }}
+                    className="space-y-2"
+                  >
+                    <f.icon className="w-5 h-5 text-brand-600" />
+                    <p className="text-sm font-bold text-stone-900">{f.title}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed">{f.copy}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <div className="relative max-w-md mx-auto lg:max-w-none">
+              <img
+                src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1000&q=80"
+                alt="Modern residential building"
+                className="w-full aspect-[4/5] object-cover rounded-3xl shadow-2xl"
+                referrerPolicy="no-referrer"
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="absolute -bottom-6 -left-4 sm:-bottom-8 sm:-left-8 bg-white rounded-2xl shadow-xl border border-stone-100 p-5 sm:p-6 max-w-[200px]"
+              >
+                <p className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
+                  <CountUp value={`${ALL_CITIES.length}`} />+
+                </p>
+                <p className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase tracking-widest mt-1">Cities Tracked Live</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: -16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.55 }}
+                className="absolute -top-5 -right-4 sm:-top-6 sm:-right-6 bg-stone-900 rounded-2xl shadow-xl p-4 sm:p-5 flex items-center gap-2"
+              >
+                <ShieldCheck className="w-5 h-5 text-brand-400 shrink-0" />
+                <p className="text-white text-xs font-bold leading-tight">12-Point<br />Verification</p>
+              </motion.div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Who it's for — this is a SaaS platform for the whole real estate ecosystem, not
           just buyers. One role picker, four tailored entry points into the same product. */}
-      <section className="bg-stone-900 py-16 sm:py-24 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
-          <div className="max-w-2xl space-y-3 sm:space-y-4">
+      <section className="relative py-16 sm:py-24 px-4 sm:px-8 overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2000&q=80"
+            alt=""
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-stone-950/90" />
+        </div>
+        <div className="relative max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-400">One Platform, Every Role</p>
             <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tighter">Built for everyone in real estate</h2>
             <p className="text-sm sm:text-lg text-stone-400 font-medium leading-relaxed">
               Whether you're buying your first home or managing a global portfolio, JG Estate gives you the tools built for your role.
             </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          </Reveal>
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+          >
             {[
               {
                 icon: UserIcon,
@@ -1964,7 +2128,7 @@ const Dashboard = () => {
                 onClick: () => scrollToSection('market'),
               },
             ].map((p) => (
-              <div key={p.role} className="group bg-stone-800/60 hover:bg-stone-800 border border-stone-700 hover:border-brand-500/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 sm:gap-8 transition-all">
+              <motion.div key={p.role} variants={staggerItem} className="group bg-stone-800/60 hover:bg-stone-800 border border-stone-700 hover:border-brand-500/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 sm:gap-8 transition-all">
                 <div className="space-y-3 sm:space-y-4">
                   <div className="bg-brand-500/10 w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
                     <p.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-400" />
@@ -1979,14 +2143,14 @@ const Dashboard = () => {
                   {p.cta}
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Stats bar — pulled straight from the same COUNTRIES dataset that powers the
-          market index and filters, not marketing fluff. */}
+          market index and filters, not marketing fluff. Numbers count up into view. */}
       <section className="bg-white border-b border-stone-200 py-10 sm:py-14 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {[
@@ -1996,66 +2160,133 @@ const Dashboard = () => {
             { value: '12-Point', label: 'Verification Standard' },
           ].map((s) => (
             <div key={s.label} className="text-center lg:text-left space-y-1">
-              <p className="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight">{s.value}</p>
+              <p className="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight"><CountUp value={s.value} /></p>
               <p className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase tracking-widest">{s.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
+      {/* How It Works — the full process, on both sides of the marketplace. A buyer's
+          path and a seller/agent/builder's path are genuinely different, so this is two
+          tracks in one tab set rather than one generic 3-step card grid. */}
       <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
-          <div className="max-w-2xl space-y-3 sm:space-y-4">
+          <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">How It Works</p>
-            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">From search to keys, in three steps</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-            {[
-              { step: '01', icon: Search, title: 'Search & Compare', copy: 'Filter by country, city, budget and property type — with live pricing in local currency.' },
-              { step: '02', icon: ShieldCheck, title: 'Verify & Connect', copy: 'Every seller passes ID verification. Message an agent or advisor directly, no middlemen.' },
-              { step: '03', icon: Landmark, title: 'Close Securely', copy: 'Payments route through licensed third-party processors in each market — never held by this platform.' },
-            ].map((s) => (
-              <div key={s.step} className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="bg-brand-50 w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center">
-                    <s.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600" />
-                  </div>
-                  <span className="text-3xl sm:text-4xl font-extrabold text-stone-100">{s.step}</span>
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold text-stone-900">{s.title}</h3>
-                <p className="text-sm text-stone-500 leading-relaxed">{s.copy}</p>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">The full process, end to end</h2>
+            <p className="text-sm sm:text-base text-stone-500 font-medium">Whichever side of a deal you're on, here's exactly what happens, in order.</p>
+          </Reveal>
+
+          <Tabs defaultValue="buyer" className="space-y-8 sm:space-y-10">
+            <TabsList className="bg-white p-1 md:p-1.5 rounded-2xl border border-stone-200 flex w-full max-w-lg mx-auto">
+              <TabsTrigger value="buyer" className="flex-1 rounded-xl px-4 md:px-8 py-2.5 md:py-3.5 data-[state=active]:bg-stone-900 data-[state=active]:text-white font-bold transition-all text-[11px] md:text-xs uppercase tracking-widest">
+                For Buyers &amp; Renters
+              </TabsTrigger>
+              <TabsTrigger value="seller" className="flex-1 rounded-xl px-4 md:px-8 py-2.5 md:py-3.5 data-[state=active]:bg-stone-900 data-[state=active]:text-white font-bold transition-all text-[11px] md:text-xs uppercase tracking-widest">
+                For Agents, Builders &amp; Investors
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="buyer" className="mt-0">
+              <div className="relative grid grid-cols-1 sm:grid-cols-4 gap-8 sm:gap-6">
+                <div className="hidden sm:block absolute top-7 left-[12.5%] right-[12.5%] h-px bg-stone-200" />
+                {[
+                  { step: '01', icon: Search, title: 'Search & Compare', copy: 'Filter by country, city, budget and property type, with live pricing in local currency.' },
+                  { step: '02', icon: ShieldCheck, title: 'Verify & Connect', copy: 'Every seller passes ID verification. Message an agent or advisor directly, no middlemen.' },
+                  { step: '03', icon: Sparkles, title: 'Compare & Decide', copy: 'Save favorites, run side-by-side comparisons, and check the numbers with the EMI calculator.' },
+                  { step: '04', icon: Landmark, title: 'Close Securely', copy: 'Payments route through licensed third-party processors in each market, never held by this platform.' },
+                ].map((s, i) => (
+                  <motion.div
+                    key={s.step}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 0.55, delay: i * 0.1 }}
+                    className="relative space-y-3 sm:space-y-4"
+                  >
+                    <div className="relative z-10 bg-brand-600 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-600/20">
+                      <s.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="micro-label text-stone-400">Step {s.step}</p>
+                    <h3 className="text-base sm:text-lg font-bold text-stone-900">{s.title}</h3>
+                    <p className="text-sm text-stone-500 leading-relaxed">{s.copy}</p>
+                  </motion.div>
+                ))}
               </div>
-            ))}
-          </div>
+            </TabsContent>
+
+            <TabsContent value="seller" className="mt-0">
+              <div className="relative grid grid-cols-1 sm:grid-cols-4 gap-8 sm:gap-6">
+                <div className="hidden sm:block absolute top-7 left-[12.5%] right-[12.5%] h-px bg-stone-200" />
+                {[
+                  { step: '01', icon: UserIcon, title: 'Create Your Account', copy: 'Sign up as an individual agent, agency or developer, then complete ID or business verification.' },
+                  { step: '02', icon: Building2, title: 'List Your Inventory', copy: 'Publish a single resale unit or an entire multi-unit project, with unit-level pricing and status.' },
+                  { step: '03', icon: LayoutDashboard, title: 'Manage From One Dashboard', copy: 'Every enquiry lands in one inbox. Track views, saves and lead quality per listing.' },
+                  { step: '04', icon: TrendingUp, title: 'Get Discovered', copy: 'Your public Builder Portfolio or Broker Storefront gives buyers a shareable page to browse your full book.' },
+                ].map((s, i) => (
+                  <motion.div
+                    key={s.step}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-60px' }}
+                    transition={{ duration: 0.55, delay: i * 0.1 }}
+                    className="relative space-y-3 sm:space-y-4"
+                  >
+                    <div className="relative z-10 bg-stone-900 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-stone-900/20">
+                      <s.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <p className="micro-label text-stone-400">Step {s.step}</p>
+                    <h3 className="text-base sm:text-lg font-bold text-stone-900">{s.title}</h3>
+                    <p className="text-sm text-stone-500 leading-relaxed">{s.copy}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
 
-      {/* Why choose JG Estate — trust/differentiation reasons, distinct from the
-          process-step "How It Works" above. Cross-border services a global buyer
-          actually needs, not just search. */}
-      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white border-b border-stone-200">
-        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
-          <div className="max-w-2xl space-y-3 sm:space-y-4">
-            <p className="micro-label text-brand-600">Why JG Estate</p>
-            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Built for cross-border buyers, not just browsers</h2>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* Why JG Estate — full-bleed architecture photography instead of another flat
+          card grid, so the trust/differentiation section reads as a genuine break in the
+          page rather than a repeat of the "How It Works" layout above. */}
+      <section className="relative py-20 sm:py-32 px-4 sm:px-8 overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=2000&q=80"
+            alt=""
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/92 via-stone-950/85 to-stone-950/92" />
+        </div>
+        <div className="relative max-w-7xl mx-auto space-y-10 sm:space-y-14">
+          <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
+            <p className="micro-label text-brand-400">Why JG Estate</p>
+            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-white tracking-tight">Built for cross-border buyers, not just browsers</h2>
+          </Reveal>
+          <motion.div
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+          >
             {[
-              { icon: Coins, title: 'Zero Buyer Fees', copy: 'Browsing, saved searches and agent contact are always free — no paywalled listings.' },
+              { icon: Coins, title: 'Zero Buyer Fees', copy: 'Browsing, saved searches and agent contact are always free, no paywalled listings.' },
               { icon: FileText, title: 'Legal & Documentation', copy: 'Cross-border ownership rules, title checks and contract review, coordinated for you.' },
-              { icon: Landmark, title: 'Escrow-Backed Payments', copy: 'Funds route through licensed processors in each market — never held by this platform.' },
+              { icon: Landmark, title: 'Escrow-Backed Payments', copy: 'Funds route through licensed processors in each market, never held by this platform.' },
               { icon: Clock, title: '24/7 Advisor Support', copy: 'WhatsApp a real advisor any time, in any of our 10 markets, no ticket queues.' },
             ].map((item) => (
-              <div key={item.title} className="text-center sm:text-left space-y-3">
-                <div className="bg-brand-50 w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mx-auto sm:mx-0">
-                  <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-600" />
+              <motion.div key={item.title} variants={staggerItem} className="text-center sm:text-left space-y-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 sm:p-6">
+                <div className="bg-brand-500/15 w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mx-auto sm:mx-0">
+                  <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-400" />
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-stone-900">{item.title}</h3>
-                <p className="text-xs sm:text-sm text-stone-500 leading-relaxed">{item.copy}</p>
-              </div>
+                <h3 className="text-sm sm:text-base font-bold text-white">{item.title}</h3>
+                <p className="text-xs sm:text-sm text-white/60 leading-relaxed">{item.copy}</p>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -2063,19 +2294,26 @@ const Dashboard = () => {
           agents and builders pay for as they outgrow the free tier. */}
       <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
-          <div className="max-w-2xl mx-auto text-center space-y-3 sm:space-y-4">
+          <Reveal className="max-w-2xl mx-auto text-center space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">Plans for Agents & Builders</p>
             <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">List for free. Scale when you're ready.</h2>
             <p className="text-sm sm:text-base text-stone-500 font-medium">Buyers and renters always browse for free. These plans are for the professionals listing property.</p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
+          </Reveal>
+          <motion.div
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+          >
             {[
               { name: 'Starter', price: 'Free', period: '', desc: 'For individual agents listing a handful of properties.', features: ['Up to 5 active listings', 'Standard search placement', 'WhatsApp buyer enquiries', 'Basic market data access'], cta: 'Start Free', highlight: false },
               { name: 'Professional', price: '$49', period: '/mo', desc: 'For agencies and growing teams.', features: ['Unlimited active listings', 'Priority search placement', 'Full portfolio dashboard', 'Advanced market analytics', 'Verified agent badge'], cta: 'Start Free Trial', highlight: true },
               { name: 'Enterprise', price: 'Custom', period: '', desc: 'For builders and developers with multi-project inventory.', features: ['Bulk project & unit uploads', 'Construction-stage sales tracking', 'Dedicated account manager', 'API access', 'Custom reporting'], cta: 'Talk to Sales', highlight: false },
             ].map((plan) => (
-              <div
+              <motion.div
                 key={plan.name}
+                variants={staggerItem}
                 className={`rounded-2xl p-6 sm:p-8 space-y-6 flex flex-col ${plan.highlight ? 'bg-stone-900 text-white border border-stone-900 lg:-translate-y-3 shadow-xl' : 'bg-white border border-stone-200'}`}
               >
                 <div className="space-y-2">
@@ -2101,26 +2339,32 @@ const Dashboard = () => {
                 >
                   {plan.cta}
                 </Button>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Testimonials */}
       <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
-          <div className="max-w-2xl space-y-3 sm:space-y-4">
+          <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">What People Are Saying</p>
             <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Trusted by buyers, agents and investors</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          </Reveal>
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+          >
             {[
               { quote: "Found and closed on an apartment in Lisbon without ever leaving New York. The verification process made it feel safe.", name: 'Amara O.', role: 'Buyer, United States' },
               { quote: "Listing our projects here cut our time-to-sale significantly — the market data alone is worth it.", name: 'Rajiv M.', role: 'Developer, India' },
               { quote: "I use the global index every week to decide where to allocate next. It's the first dashboard I open.", name: 'Sophie L.', role: 'Investor, Germany' },
             ].map((t) => (
-              <div key={t.name} className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 space-y-5">
+              <motion.div key={t.name} variants={staggerItem} className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 space-y-5">
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
                 </div>
@@ -2129,9 +2373,9 @@ const Dashboard = () => {
                   <p className="text-sm font-bold text-stone-900">{t.name}</p>
                   <p className="text-xs text-stone-400 font-medium">{t.role}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -2139,7 +2383,7 @@ const Dashboard = () => {
           content MagicBricks runs under "Property Pulse" / their Buyer's Guide. */}
       <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
         <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <Reveal className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="max-w-2xl space-y-3 sm:space-y-4">
               <p className="micro-label text-brand-600">Property News & Guides</p>
               <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Stay ahead of the market</h2>
@@ -2150,7 +2394,7 @@ const Dashboard = () => {
             >
               Get Updates <ArrowRight className="w-3.5 h-3.5" />
             </button>
-          </div>
+          </Reveal>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {[
               {
@@ -2201,10 +2445,10 @@ const Dashboard = () => {
       {/* FAQ */}
       <section className="py-16 sm:py-24 px-4 sm:px-8 bg-white">
         <div className="max-w-4xl mx-auto space-y-10 sm:space-y-14">
-          <div className="text-center space-y-3 sm:space-y-4">
+          <Reveal className="text-center space-y-3 sm:space-y-4">
             <p className="micro-label text-brand-600">Questions</p>
             <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Frequently asked</h2>
-          </div>
+          </Reveal>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
             {[
               { q: 'Is listing a property really free?', a: 'Yes — individual agents can list up to 5 active properties at no cost. Agencies and builders with more inventory can upgrade to Professional or Enterprise.' },
