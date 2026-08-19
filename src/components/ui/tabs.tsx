@@ -65,7 +65,13 @@ function TabsTrigger({
       data-state={isActive ? "active" : "inactive"}
       onClick={() => onValueChange?.(value)}
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+        // ring-inset (not the default ring-offset approach) draws the focus ring INSIDE the
+        // button's own box instead of as a box-shadow bleeding outward past its edges. Several
+        // tab bars in this app sit inside a horizontally-scrollable container with only a
+        // couple px of buffer (e.g. the Explore Properties tabs) — an outward-bleeding ring on
+        // the first/last tab gets sliced by that container's overflow clipping, which looked
+        // like a broken flat edge instead of a rounded pill. Inset can never be clipped that way.
+        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
         className
       )}
       {...props}

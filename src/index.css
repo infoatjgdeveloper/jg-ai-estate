@@ -92,7 +92,9 @@
     --destructive-foreground: #FFFFFF;
     --border: #E1DBCE;
     --input: #E1DBCE;
-    --ring: #1D46B0;
+    /* Was a leftover blue (#1D46B0) from an earlier template — clashed with this app's red
+       brand palette (--color-brand-600: #AF1D2E) everywhere a focus ring showed up. */
+    --ring: #AF1D2E;
     --radius: 0.75rem;
 }
 

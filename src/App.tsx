@@ -2368,6 +2368,399 @@ const Dashboard = () => {
         </motion.div>
       </section>
 
+      {/* Explore Properties — moved directly beneath the hero so a first-time visitor
+          sees real listings immediately, instead of after scrolling through several
+          marketing sections. */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 sm:py-24 relative z-30">
+        <Tabs defaultValue="browse" className="space-y-12 md:space-y-20" id="catalog">
+          <Reveal className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 md:gap-10">
+            <div className="space-y-2 md:space-y-4">
+              <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold text-stone-900 tracking-tight">Explore Properties</h2>
+              <p className="micro-label text-brand-600">Verified Listings Across {COUNTRIES.length} Countries</p>
+            </div>
+            {/* overflow-x-auto lets this row scroll horizontally when narrow, but a scroll
+                container with no padding of its own clips flush against its first/last
+                child's rounded corners the moment it scrolls even slightly — a small p-0.5
+                buffer keeps the active pill's rounded edge fully visible instead of looking
+                cut off. Also widened the flex-col->flex-row breakpoint (lg->xl) above so this
+                row has more room before the tab list is forced to share horizontal space. */}
+            <div className="w-full xl:w-auto overflow-x-auto scrollbar-none pb-2 p-0.5 -m-0.5">
+              <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-3xl border border-stone-200 flex w-max xl:w-auto">
+                <TabsTrigger value="browse" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                  Explore
+                </TabsTrigger>
+                <TabsTrigger value="market" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                  Market Data
+                </TabsTrigger>
+                {user && (
+                  <TabsTrigger value="portfolio" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                    Portfolio
+                  </TabsTrigger>
+                )}
+                {profile?.role === 'developer' && (
+                  <TabsTrigger value="inventory" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                    Inventory
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="resale" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
+                  Resale
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </Reveal>
+
+          <TabsContent value="browse" className="mt-0">
+            {projects.length === 0 ? (
+              <div id="sandbox-seed-alert" className="text-center py-12 sm:py-24 bg-white border border-stone-200 rounded-2xl sm:rounded-3xl p-6 sm:p-12 max-w-2xl mx-auto space-y-6 shadow-sm">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand-50 text-brand-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto">
+                  <Building2 className="w-8 h-8 sm:w-10 sm:h-10" />
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-stone-900">No Listings Yet</h3>
+                <p className="text-sm sm:text-base text-stone-500 font-medium leading-relaxed">
+                  Load sample properties from across our {COUNTRIES.length} markets to preview the marketplace.
+                </p>
+                {user ? (
+                  <Button
+                    onClick={seedData}
+                    className="bg-brand-600 text-white hover:bg-stone-900 font-bold rounded-xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-sm transition-all"
+                  >
+                    Load Sample Listings
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => openAuthModal('signin')}
+                    className="bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-sm transition-all"
+                  >
+                    Sign In to Get Started
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6 sm:space-y-10">
+                {/* Search + filter bar — Buy/Rent toggle lives here now; Sell, Evaluate and
+                    Invest already have their own entry points in the nav and the role cards
+                    above, so they don't need to be repeated as a second row of buttons. */}
+                <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
+                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 sm:gap-4">
+                    {/* Buy / Rent segmented toggle */}
+                    <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
+                      {(['buy', 'rent'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => setBrowseMode(mode)}
+                          className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all capitalize ${
+                            browseMode === mode ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search Term */}
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search by city, country, project name or developer..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-12 bg-stone-50/50 border-stone-200 text-stone-900 rounded-xl h-12 sm:h-14 font-medium focus:border-brand-600 focus:bg-white transition-all text-sm"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-600 uppercase"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Toggle Advanced Filters Button */}
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsFilterPanelExpanded(!isFilterPanelExpanded)}
+                        className={`h-12 sm:h-14 px-5 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 border-stone-200 hover:bg-stone-50 transition-all ${isFilterPanelExpanded ? 'bg-brand-50/50 border-brand-200 text-brand-600 shadow-sm' : 'text-stone-600'}`}
+                      >
+                        <SlidersHorizontal className="w-4 h-4" />
+                        <span>Filters</span>
+                        {(budgetRange !== "All" || selectedConstStatus !== "All" || selectedBhkType !== "All" || onlyReraVerified) && (
+                          <span className="w-2.5 h-2.5 rounded-full bg-brand-600 animate-pulse" />
+                        )}
+                      </Button>
+
+                      {/* Reset Filters button */}
+                      {(searchQuery || budgetRange !== "All" || selectedConstStatus !== "All" || selectedBhkType !== "All" || onlyReraVerified) && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setSearchQuery("");
+                            setBudgetRange("All");
+                            setSelectedConstStatus("All");
+                            setSelectedBhkType("All");
+                            setOnlyReraVerified(false);
+                          }}
+                          className="h-12 sm:h-14 px-4 font-bold text-stone-500 hover:text-rose-600"
+                        >
+                          Reset All
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Collapsible Advanced Filters Drawer */}
+                  {isFilterPanelExpanded && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-5 border-t border-stone-100">
+                      {/* Budget Ranges */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Budget Range (USD equiv.)</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['All', '< $300K', '$300K - $800K', '$800K - $2M', '> $2M'].map((b) => (
+                            <button
+                              key={b}
+                              onClick={() => setBudgetRange(b)}
+                              className={`text-xs px-3 py-1.5 rounded-lg font-bold border transition-all ${
+                                budgetRange === b 
+                                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-100' 
+                                  : 'border-stone-150 bg-stone-50 text-stone-500 hover:border-stone-300'
+                              }`}
+                            >
+                              {b}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* BHK Configs */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Room Configuration</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['All', '1 BR', '2 BR', '3 BR', '4 BR', 'Penthouse'].map((bhk) => (
+                            <button
+                              key={bhk}
+                              onClick={() => setSelectedBhkType(bhk)}
+                              className={`text-xs px-3 py-1.5 rounded-lg font-bold border transition-all ${
+                                selectedBhkType === bhk 
+                                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-100' 
+                                  : 'border-stone-150 bg-stone-50 text-stone-500 hover:border-stone-300'
+                              }`}
+                            >
+                              {bhk}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Construction Status */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Milestone</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['All', 'Ready to Move', 'Under Construction'].map((status) => (
+                            <button
+                              key={status}
+                              onClick={() => setSelectedConstStatus(status)}
+                              className={`text-xs px-3 py-1.5 rounded-lg font-bold border transition-all ${
+                                selectedConstStatus === status 
+                                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-100' 
+                                  : 'border-stone-150 bg-stone-50 text-stone-500 hover:border-stone-300'
+                              }`}
+                            >
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Verification & Toggle */}
+                      <div className="space-y-2 flex flex-col justify-end">
+                        <label className="flex items-center gap-3 p-3 bg-stone-50 border border-stone-100 hover:border-stone-300 rounded-xl cursor-pointer select-none transition-all">
+                          <input 
+                            type="checkbox"
+                            checked={onlyReraVerified}
+                            onChange={(e) => setOnlyReraVerified(e.target.checked)}
+                            className="w-4 h-4 text-brand-600 accent-brand-600 border-stone-300 rounded focus:ring-brand-500"
+                          />
+          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-stone-800">Verified Listings Only</span>
+                            <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">ID-verified sellers & RERA-registered</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Result count + Map/Grid view toggle */}
+                {filteredProjects.length > 0 && (
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-xs sm:text-sm font-bold text-stone-500 flex items-center gap-2 flex-wrap">
+                      <span><span className="text-stone-900">{filteredProjects.length}</span> {filteredProjects.length === 1 ? 'property' : 'properties'} found</span>
+                      {/* Honesty note: this catalog is sample/demo data, not a live MLS feed —
+                          said plainly here rather than buried only in the footer disclaimer. */}
+                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                        Preview Data
+                      </span>
+                    </p>
+                    <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200">
+                      <button
+                        onClick={() => setBrowseView('split')}
+                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 ${
+                          browseView === 'split' ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500'
+                        }`}
+                      >
+                        <MapIcon className="w-3.5 h-3.5" /> Map
+                      </button>
+                      <button
+                        onClick={() => setBrowseView('grid')}
+                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 ${
+                          browseView === 'grid' ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500'
+                        }`}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" /> Grid
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {filteredProjects.length === 0 ? (
+                  <div className="text-center py-20 bg-stone-50 border border-dashed rounded-3xl p-6 max-w-lg mx-auto">
+                    <FileSearch className="w-12 h-12 text-stone-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-stone-800">No Matched Properties</h3>
+                    <p className="text-sm text-stone-500 mt-2">Try softening your filter coordinates or select another geographic market segment.</p>
+                  </div>
+                ) : browseView === 'grid' ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                    {filteredProjects.map(project => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          onSelect={handleSelectProject}
+                          isFavorite={favorites.includes(project.id)}
+                          onToggleFavorite={handleToggleFavorite}
+                          isComparing={compareIds.includes(project.id)}
+                          onToggleCompare={handleToggleCompare}
+                          onViewPortfolio={handleViewBuilder}
+                        />
+                      ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    {/* Left: scrollable listing list */}
+                    <div className="lg:col-span-2 space-y-3 lg:max-h-[780px] lg:overflow-y-auto pr-1 scrollbar-none">
+                      {filteredProjects.map(project => (
+                        <ListingRow
+                          key={project.id}
+                          project={project}
+                          onSelect={handleSelectProject}
+                          isFavorite={favorites.includes(project.id)}
+                          onToggleFavorite={handleToggleFavorite}
+                          isActive={hoveredPinId === project.id || activePinId === project.id}
+                          onHover={setHoveredPinId}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Right: sticky interactive map */}
+                    <div className="lg:col-span-3 h-[420px] lg:h-[780px] lg:sticky lg:top-24 rounded-3xl overflow-hidden border border-stone-200 shadow-sm">
+                      <MapView
+                        pins={filteredProjects
+                          .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
+                          .map(p => ({ id: p.id, lat: p.lat as number, lng: p.lng as number, label: priceLabel(p.basePrice, p.currency, p.listingType) }))}
+                        activeId={hoveredPinId || activePinId}
+                        onSelect={(id) => {
+                          setActivePinId(id);
+                          const p = filteredProjects.find(fp => fp.id === id);
+                          if (p) handleSelectProject(p);
+                        }}
+                        onHover={setHoveredPinId}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="market" className="mt-0">
+            <MarketDashboard
+              onSelectCountry={(name) => {
+                handleSelectCountryRoute(name);
+                scrollToSection('catalog');
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="inventory" className="mt-0">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {projects
+                .filter(p => p.developerId === user?.uid)
+                .map(project => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onSelect={handleSelectProject}
+                    isFavorite={favorites.includes(project.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                ))}
+              <div onClick={() => setIsLaunchOpen(true)}>
+                <Card className="h-full border-dashed border-2 border-stone-200 bg-stone-50 rounded-3xl flex flex-col items-center justify-center p-10 sm:p-20 text-center cursor-pointer hover:border-brand-600 hover:bg-brand-50 transition-all group">
+                  <div className="bg-brand-100 p-5 sm:p-8 rounded-full mb-4 sm:mb-8 group-hover:bg-brand-600 group-hover:scale-110 transition-all">
+                    <Plus className="w-8 sm:w-14 h-8 sm:h-14 text-brand-600 group-hover:text-white" />
+                  </div>
+                  <CardTitle className="text-2xl sm:text-4xl font-bold text-stone-900">Add a Property</CardTitle>
+                  <CardDescription className="micro-label mt-2 sm:micro-label mt-4 text-stone-500">List a new project or unit</CardDescription>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="portfolio" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-12">
+              {investments.map(inv => (
+                <InvestmentTracker key={inv.id} investment={inv} onRelist={handleRelist} onPay={handlePayment} />
+              ))}
+              {investments.length === 0 && (
+                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-3xl border-stone-100 p-6 sm:p-12">
+                  <div className="bg-brand-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8">
+                    <Wallet className="w-8 h-8 sm:w-12 sm:h-12 text-brand-600" />
+                  </div>
+                  <h3 className="font-bold tracking-tight text-2xl sm:text-4xl text-stone-900">No Investments Yet</h3>
+                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 max-w-md mx-auto font-medium">Your portfolio will show up here once you make your first investment.</p>
+                  <Button
+                    onClick={() => scrollToSection('catalog')}
+                    variant="outline"
+                    className="mt-6 sm:mt-10 border-stone-200 text-stone-900 hover:bg-stone-50 rounded-full px-8 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm font-bold"
+                  >
+                    Browse Properties
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="resale" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+              {resaleUnits.map(unit => (
+                <ResaleListing key={unit.id} unit={unit} onBid={handleAction} />
+              ))}
+              {resaleUnits.length === 0 && (
+                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-3xl border-stone-100 p-6 sm:p-12">
+                  <div className="bg-brand-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8">
+                    <Gavel className="w-8 h-8 sm:w-12 sm:h-12 text-brand-600" />
+                  </div>
+                  <h3 className="font-bold tracking-tight text-2xl sm:text-4xl text-stone-900">No Resale Listings</h3>
+                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 font-medium">There are currently no properties listed for resale in this region.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+
       {/* What is JGEstate — plain-language explanation of the product, placed right after
           the hero so a first-time visitor understands what this is before anything else. */}
       <section className="py-20 sm:py-32 px-4 sm:px-8 bg-white overflow-hidden">
@@ -2885,393 +3278,6 @@ const Dashboard = () => {
             </Reveal>
           </div>
         </div>
-
-        <Tabs defaultValue="browse" className="space-y-12 md:space-y-20" id="catalog">
-          <Reveal className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 md:gap-10">
-            <div className="space-y-2 md:space-y-4">
-              <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold text-stone-900 tracking-tight">Explore Properties</h2>
-              <p className="micro-label text-brand-600">Verified Listings Across {COUNTRIES.length} Countries</p>
-            </div>
-            {/* overflow-x-auto lets this row scroll horizontally when narrow, but a scroll
-                container with no padding of its own clips flush against its first/last
-                child's rounded corners the moment it scrolls even slightly — a small p-0.5
-                buffer keeps the active pill's rounded edge fully visible instead of looking
-                cut off. Also widened the flex-col->flex-row breakpoint (lg->xl) above so this
-                row has more room before the tab list is forced to share horizontal space. */}
-            <div className="w-full xl:w-auto overflow-x-auto scrollbar-none pb-2 p-0.5 -m-0.5">
-              <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-3xl border border-stone-200 flex w-max xl:w-auto">
-                <TabsTrigger value="browse" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
-                  Explore
-                </TabsTrigger>
-                <TabsTrigger value="market" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
-                  Market Data
-                </TabsTrigger>
-                {user && (
-                  <TabsTrigger value="portfolio" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
-                    Portfolio
-                  </TabsTrigger>
-                )}
-                {profile?.role === 'developer' && (
-                  <TabsTrigger value="inventory" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
-                    Inventory
-                  </TabsTrigger>
-                )}
-                <TabsTrigger value="resale" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
-                  Resale
-                </TabsTrigger>
-              </TabsList>
-            </div>
-          </Reveal>
-
-          <TabsContent value="browse" className="mt-0">
-            {projects.length === 0 ? (
-              <div id="sandbox-seed-alert" className="text-center py-12 sm:py-24 bg-white border border-stone-200 rounded-2xl sm:rounded-3xl p-6 sm:p-12 max-w-2xl mx-auto space-y-6 shadow-sm">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand-50 text-brand-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto">
-                  <Building2 className="w-8 h-8 sm:w-10 sm:h-10" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-stone-900">No Listings Yet</h3>
-                <p className="text-sm sm:text-base text-stone-500 font-medium leading-relaxed">
-                  Load sample properties from across our {COUNTRIES.length} markets to preview the marketplace.
-                </p>
-                {user ? (
-                  <Button
-                    onClick={seedData}
-                    className="bg-brand-600 text-white hover:bg-stone-900 font-bold rounded-xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-sm transition-all"
-                  >
-                    Load Sample Listings
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => openAuthModal('signin')}
-                    className="bg-stone-900 text-white hover:bg-brand-600 font-bold rounded-xl px-6 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm uppercase tracking-widest shadow-sm transition-all"
-                  >
-                    Sign In to Get Started
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-6 sm:space-y-10">
-                {/* Search + filter bar — Buy/Rent toggle lives here now; Sell, Evaluate and
-                    Invest already have their own entry points in the nav and the role cards
-                    above, so they don't need to be repeated as a second row of buttons. */}
-                <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
-                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 sm:gap-4">
-                    {/* Buy / Rent segmented toggle */}
-                    <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
-                      {(['buy', 'rent'] as const).map((mode) => (
-                        <button
-                          key={mode}
-                          onClick={() => setBrowseMode(mode)}
-                          className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all capitalize ${
-                            browseMode === mode ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
-                          }`}
-                        >
-                          {mode}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Search Term */}
-                    <div className="relative flex-1">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-                      <Input
-                        type="text"
-                        placeholder="Search by city, country, project name or developer..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 bg-stone-50/50 border-stone-200 text-stone-900 rounded-xl h-12 sm:h-14 font-medium focus:border-brand-600 focus:bg-white transition-all text-sm"
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery("")}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-600 uppercase"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
-                      {/* Toggle Advanced Filters Button */}
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsFilterPanelExpanded(!isFilterPanelExpanded)}
-                        className={`h-12 sm:h-14 px-5 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 border-stone-200 hover:bg-stone-50 transition-all ${isFilterPanelExpanded ? 'bg-brand-50/50 border-brand-200 text-brand-600 shadow-sm' : 'text-stone-600'}`}
-                      >
-                        <SlidersHorizontal className="w-4 h-4" />
-                        <span>Filters</span>
-                        {(budgetRange !== "All" || selectedConstStatus !== "All" || selectedBhkType !== "All" || onlyReraVerified) && (
-                          <span className="w-2.5 h-2.5 rounded-full bg-brand-600 animate-pulse" />
-                        )}
-                      </Button>
-
-                      {/* Reset Filters button */}
-                      {(searchQuery || budgetRange !== "All" || selectedConstStatus !== "All" || selectedBhkType !== "All" || onlyReraVerified) && (
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setSearchQuery("");
-                            setBudgetRange("All");
-                            setSelectedConstStatus("All");
-                            setSelectedBhkType("All");
-                            setOnlyReraVerified(false);
-                          }}
-                          className="h-12 sm:h-14 px-4 font-bold text-stone-500 hover:text-rose-600"
-                        >
-                          Reset All
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Collapsible Advanced Filters Drawer */}
-                  {isFilterPanelExpanded && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-5 border-t border-stone-100">
-                      {/* Budget Ranges */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Budget Range (USD equiv.)</Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {['All', '< $300K', '$300K - $800K', '$800K - $2M', '> $2M'].map((b) => (
-                            <button
-                              key={b}
-                              onClick={() => setBudgetRange(b)}
-                              className={`text-xs px-3 py-1.5 rounded-lg font-bold border transition-all ${
-                                budgetRange === b 
-                                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-100' 
-                                  : 'border-stone-150 bg-stone-50 text-stone-500 hover:border-stone-300'
-                              }`}
-                            >
-                              {b}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* BHK Configs */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Room Configuration</Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {['All', '1 BR', '2 BR', '3 BR', '4 BR', 'Penthouse'].map((bhk) => (
-                            <button
-                              key={bhk}
-                              onClick={() => setSelectedBhkType(bhk)}
-                              className={`text-xs px-3 py-1.5 rounded-lg font-bold border transition-all ${
-                                selectedBhkType === bhk 
-                                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-100' 
-                                  : 'border-stone-150 bg-stone-50 text-stone-500 hover:border-stone-300'
-                              }`}
-                            >
-                              {bhk}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Construction Status */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400">Milestone</Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {['All', 'Ready to Move', 'Under Construction'].map((status) => (
-                            <button
-                              key={status}
-                              onClick={() => setSelectedConstStatus(status)}
-                              className={`text-xs px-3 py-1.5 rounded-lg font-bold border transition-all ${
-                                selectedConstStatus === status 
-                                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm shadow-brand-100' 
-                                  : 'border-stone-150 bg-stone-50 text-stone-500 hover:border-stone-300'
-                              }`}
-                            >
-                              {status}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Verification & Toggle */}
-                      <div className="space-y-2 flex flex-col justify-end">
-                        <label className="flex items-center gap-3 p-3 bg-stone-50 border border-stone-100 hover:border-stone-300 rounded-xl cursor-pointer select-none transition-all">
-                          <input 
-                            type="checkbox"
-                            checked={onlyReraVerified}
-                            onChange={(e) => setOnlyReraVerified(e.target.checked)}
-                            className="w-4 h-4 text-brand-600 accent-brand-600 border-stone-300 rounded focus:ring-brand-500"
-                          />
-          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-stone-800">Verified Listings Only</span>
-                            <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">ID-verified sellers & RERA-registered</span>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Result count + Map/Grid view toggle */}
-                {filteredProjects.length > 0 && (
-                  <div className="flex items-center justify-between px-1">
-                    <p className="text-xs sm:text-sm font-bold text-stone-500 flex items-center gap-2 flex-wrap">
-                      <span><span className="text-stone-900">{filteredProjects.length}</span> {filteredProjects.length === 1 ? 'property' : 'properties'} found</span>
-                      {/* Honesty note: this catalog is sample/demo data, not a live MLS feed —
-                          said plainly here rather than buried only in the footer disclaimer. */}
-                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
-                        Preview Data
-                      </span>
-                    </p>
-                    <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200">
-                      <button
-                        onClick={() => setBrowseView('split')}
-                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 ${
-                          browseView === 'split' ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500'
-                        }`}
-                      >
-                        <MapIcon className="w-3.5 h-3.5" /> Map
-                      </button>
-                      <button
-                        onClick={() => setBrowseView('grid')}
-                        className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 ${
-                          browseView === 'grid' ? 'bg-white text-brand-600 shadow-sm' : 'text-stone-500'
-                        }`}
-                      >
-                        <LayoutGrid className="w-3.5 h-3.5" /> Grid
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {filteredProjects.length === 0 ? (
-                  <div className="text-center py-20 bg-stone-50 border border-dashed rounded-3xl p-6 max-w-lg mx-auto">
-                    <FileSearch className="w-12 h-12 text-stone-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-stone-800">No Matched Properties</h3>
-                    <p className="text-sm text-stone-500 mt-2">Try softening your filter coordinates or select another geographic market segment.</p>
-                  </div>
-                ) : browseView === 'grid' ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                    {filteredProjects.map(project => (
-                        <ProjectCard
-                          key={project.id}
-                          project={project}
-                          onSelect={handleSelectProject}
-                          isFavorite={favorites.includes(project.id)}
-                          onToggleFavorite={handleToggleFavorite}
-                          isComparing={compareIds.includes(project.id)}
-                          onToggleCompare={handleToggleCompare}
-                          onViewPortfolio={handleViewBuilder}
-                        />
-                      ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                    {/* Left: scrollable listing list */}
-                    <div className="lg:col-span-2 space-y-3 lg:max-h-[780px] lg:overflow-y-auto pr-1 scrollbar-none">
-                      {filteredProjects.map(project => (
-                        <ListingRow
-                          key={project.id}
-                          project={project}
-                          onSelect={handleSelectProject}
-                          isFavorite={favorites.includes(project.id)}
-                          onToggleFavorite={handleToggleFavorite}
-                          isActive={hoveredPinId === project.id || activePinId === project.id}
-                          onHover={setHoveredPinId}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Right: sticky interactive map */}
-                    <div className="lg:col-span-3 h-[420px] lg:h-[780px] lg:sticky lg:top-24 rounded-3xl overflow-hidden border border-stone-200 shadow-sm">
-                      <MapView
-                        pins={filteredProjects
-                          .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
-                          .map(p => ({ id: p.id, lat: p.lat as number, lng: p.lng as number, label: priceLabel(p.basePrice, p.currency, p.listingType) }))}
-                        activeId={hoveredPinId || activePinId}
-                        onSelect={(id) => {
-                          setActivePinId(id);
-                          const p = filteredProjects.find(fp => fp.id === id);
-                          if (p) handleSelectProject(p);
-                        }}
-                        onHover={setHoveredPinId}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="market" className="mt-0">
-            <MarketDashboard
-              onSelectCountry={(name) => {
-                handleSelectCountryRoute(name);
-                scrollToSection('catalog');
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="inventory" className="mt-0">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {projects
-                .filter(p => p.developerId === user?.uid)
-                .map(project => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onSelect={handleSelectProject}
-                    isFavorite={favorites.includes(project.id)}
-                    onToggleFavorite={handleToggleFavorite}
-                  />
-                ))}
-              <div onClick={() => setIsLaunchOpen(true)}>
-                <Card className="h-full border-dashed border-2 border-stone-200 bg-stone-50 rounded-3xl flex flex-col items-center justify-center p-10 sm:p-20 text-center cursor-pointer hover:border-brand-600 hover:bg-brand-50 transition-all group">
-                  <div className="bg-brand-100 p-5 sm:p-8 rounded-full mb-4 sm:mb-8 group-hover:bg-brand-600 group-hover:scale-110 transition-all">
-                    <Plus className="w-8 sm:w-14 h-8 sm:h-14 text-brand-600 group-hover:text-white" />
-                  </div>
-                  <CardTitle className="text-2xl sm:text-4xl font-bold text-stone-900">Add a Property</CardTitle>
-                  <CardDescription className="micro-label mt-2 sm:micro-label mt-4 text-stone-500">List a new project or unit</CardDescription>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="portfolio" className="mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-12">
-              {investments.map(inv => (
-                <InvestmentTracker key={inv.id} investment={inv} onRelist={handleRelist} onPay={handlePayment} />
-              ))}
-              {investments.length === 0 && (
-                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-3xl border-stone-100 p-6 sm:p-12">
-                  <div className="bg-brand-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8">
-                    <Wallet className="w-8 h-8 sm:w-12 sm:h-12 text-brand-600" />
-                  </div>
-                  <h3 className="font-bold tracking-tight text-2xl sm:text-4xl text-stone-900">No Investments Yet</h3>
-                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 max-w-md mx-auto font-medium">Your portfolio will show up here once you make your first investment.</p>
-                  <Button
-                    onClick={() => scrollToSection('catalog')}
-                    variant="outline"
-                    className="mt-6 sm:mt-10 border-stone-200 text-stone-900 hover:bg-stone-50 rounded-full px-8 py-4 sm:px-12 sm:py-6 text-xs sm:text-sm font-bold"
-                  >
-                    Browse Properties
-                  </Button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="resale" className="mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-              {resaleUnits.map(unit => (
-                <ResaleListing key={unit.id} unit={unit} onBid={handleAction} />
-              ))}
-              {resaleUnits.length === 0 && (
-                <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-3xl border-stone-100 p-6 sm:p-12">
-                  <div className="bg-brand-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8">
-                    <Gavel className="w-8 h-8 sm:w-12 sm:h-12 text-brand-600" />
-                  </div>
-                  <h3 className="font-bold tracking-tight text-2xl sm:text-4xl text-stone-900">No Resale Listings</h3>
-                  <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 font-medium">There are currently no properties listed for resale in this region.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
       </div>
 
       {/* Project Details Dialog */}
