@@ -649,17 +649,25 @@ const Navbar = ({
           before) made the two halves different widths, so the loop visibly jumped/gapped
           once per cycle. Keeping the track to nothing but the duplicated TICKERS list fixes
           that; LIVE becomes a static, non-scrolling label instead. */}
-      <div className="w-full bg-gradient-to-r from-brand-950 via-stone-900 to-brand-950 py-1.5 overflow-hidden flex items-center">
-        <div className="flex items-center gap-1.5 pl-4 pr-4 shrink-0 z-10">
+      <div className="w-full bg-gradient-to-r from-brand-950 via-stone-900 to-brand-950 py-1.5 flex items-center">
+        <div className="flex items-center gap-1.5 pl-4 pr-4 shrink-0 z-10 bg-stone-900">
           <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
           </span>
           <span className="text-[11px] font-mono font-bold tracking-widest text-emerald-300">LIVE</span>
         </div>
-        <div className="flex items-center gap-16 animate-marquee whitespace-nowrap overflow-hidden">
-          {TICKERS.map((ticker, i) => <TickerItem key={i} ticker={ticker} />)}
-          {TICKERS.map((ticker, i) => <TickerItem key={`dup-${i}`} ticker={ticker} />)}
+        {/* This box is the actual clipping boundary for the marquee track below. `translateX()`
+            is not constrained by overflow-hidden on the element it's applied to — only by an
+            ancestor's overflow-hidden — so the old markup (one shared overflow-hidden around
+            both LIVE and the track) let the animated track slide underneath/over the LIVE badge
+            as it moved, producing garbled overlapping text. Giving the track its own dedicated
+            overflow-hidden wrapper, sized to start exactly where LIVE ends, fixes that. */}
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex items-center gap-16 animate-marquee whitespace-nowrap w-max">
+            {TICKERS.map((ticker, i) => <TickerItem key={i} ticker={ticker} />)}
+            {TICKERS.map((ticker, i) => <TickerItem key={`dup-${i}`} ticker={ticker} />)}
+          </div>
         </div>
       </div>
 
@@ -1310,9 +1318,26 @@ const CountryIndexCard: React.FC<{ country: Country; onSelect: (name: string) =>
   const blended = country.cities[0].series.map((_, i) =>
     Math.round(country.cities.reduce((sum, c) => sum + c.series[i], 0) / country.cities.length)
   );
-  const chartData = blended.map((value, i) => ({ i, value }));
   const avgYoy = country.cities.reduce((s, c) => s + c.yoyChange, 0) / country.cities.length;
   const isUp = avgYoy >= 0;
+
+  // Hand-rolled sparkline instead of Recharts' ResponsiveContainer: ResponsiveContainer
+  // measures its parent via ResizeObserver on mount, and in a staggered/animated grid like
+  // this one (cards fade/slide in via framer-motion) that first measurement can land while
+  // the card is still at its pre-animation size, so it locks in a 0x0 reading and the chart
+  // never draws — leaving a blank gap where the sparkline should be. An SVG with a viewBox
+  // scales purely via CSS, so it always renders correctly regardless of animation timing.
+  const sparkW = 100, sparkH = 40;
+  const sparkMin = Math.min(...blended);
+  const sparkMax = Math.max(...blended);
+  const sparkRange = sparkMax - sparkMin || 1;
+  const sparkPoints = blended.map((v, i) => {
+    const x = (i / (blended.length - 1)) * sparkW;
+    const y = sparkH - ((v - sparkMin) / sparkRange) * sparkH;
+    return `${x},${y}`;
+  });
+  const sparkColor = isUp ? '#10b981' : '#f43f5e';
+  const sparkGradId = `spark-${country.code}`;
 
   return (
     <Card
@@ -1335,17 +1360,16 @@ const CountryIndexCard: React.FC<{ country: Country; onSelect: (name: string) =>
         </div>
 
         <div className="h-16 -mx-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id={`spark-${country.code}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={isUp ? '#10b981' : '#f43f5e'} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={isUp ? '#10b981' : '#f43f5e'} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <Area type="monotone" dataKey="value" stroke={isUp ? '#10b981' : '#f43f5e'} strokeWidth={2} fill={`url(#spark-${country.code})`} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <svg viewBox={`0 0 ${sparkW} ${sparkH}`} preserveAspectRatio="none" className="w-full h-full">
+            <defs>
+              <linearGradient id={sparkGradId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={sparkColor} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={sparkColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <path d={`M0,${sparkH} L${sparkPoints.join(' L')} L${sparkW},${sparkH} Z`} fill={`url(#${sparkGradId})`} stroke="none" />
+            <path d={`M${sparkPoints.join(' L')}`} fill="none" stroke={sparkColor} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+          </svg>
         </div>
 
         <div className="space-y-1.5 pt-1 border-t border-stone-100">
@@ -2863,13 +2887,19 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="browse" className="space-y-12 md:space-y-20" id="catalog">
-          <Reveal className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 md:gap-10">
+          <Reveal className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 md:gap-10">
             <div className="space-y-2 md:space-y-4">
               <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold text-stone-900 tracking-tight">Explore Properties</h2>
               <p className="micro-label text-brand-600">Verified Listings Across {COUNTRIES.length} Countries</p>
             </div>
-            <div className="w-full lg:w-auto overflow-x-auto scrollbar-none pb-2">
-              <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-3xl border border-stone-200 flex w-max lg:w-auto">
+            {/* overflow-x-auto lets this row scroll horizontally when narrow, but a scroll
+                container with no padding of its own clips flush against its first/last
+                child's rounded corners the moment it scrolls even slightly — a small p-0.5
+                buffer keeps the active pill's rounded edge fully visible instead of looking
+                cut off. Also widened the flex-col->flex-row breakpoint (lg->xl) above so this
+                row has more room before the tab list is forced to share horizontal space. */}
+            <div className="w-full xl:w-auto overflow-x-auto scrollbar-none pb-2 p-0.5 -m-0.5">
+              <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-3xl border border-stone-200 flex w-max xl:w-auto">
                 <TabsTrigger value="browse" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                   Explore
                 </TabsTrigger>
