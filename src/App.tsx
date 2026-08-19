@@ -82,7 +82,9 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  Bell,
+  Calculator
 } from 'lucide-react';
 
 import { 
@@ -151,7 +153,29 @@ interface Project {
   amenities?: string[];
   landmarks?: { name: string; distance: string }[];
   aiScore?: number;
+  // Every project doc already gets this written via serverTimestamp() on creation and the
+  // main query already orders by it — it just wasn't in this type or surfaced in the UI yet.
+  // Using the real write time here means "Listed X ago" reflects actual data instead of a
+  // made-up date, which is the same standard the rest of this pass is holding to.
+  createdAt?: { toDate: () => Date } | Date | null;
 }
+
+// Firestore can hand this back as a Timestamp (has toDate()), a plain Date, or occasionally
+// null while a doc is still writing — this normalizes all three into a "time ago" string.
+const timeAgo = (createdAt: Project['createdAt']): string | null => {
+  if (!createdAt) return null;
+  const date = createdAt instanceof Date ? createdAt : createdAt.toDate?.();
+  if (!date || isNaN(date.getTime())) return null;
+  const diffMs = Date.now() - date.getTime();
+  const days = Math.floor(diffMs / 86400000);
+  if (days < 1) return 'Listed today';
+  if (days === 1) return 'Listed 1 day ago';
+  if (days < 30) return `Listed ${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `Listed ${months} ${months === 1 ? 'month' : 'months'} ago`;
+  const years = Math.floor(months / 12);
+  return `Listed ${years} ${years === 1 ? 'year' : 'years'} ago`;
+};
 
 interface Unit {
   id: string;
@@ -631,11 +655,12 @@ interface NavbarProps {
   onInvestClick: () => void;
   onAdvisorClick: () => void;
   onEmiClick: () => void;
+  onFindAgentsClick: () => void;
 }
 
 const Navbar = ({
   onProfileClick, onMarketplaceClick, selectedCountry, onSelectCountry,
-  onBuyClick, onRentClick, onSellClick, onEvaluateClick, onInvestClick, onAdvisorClick, onEmiClick,
+  onBuyClick, onRentClick, onSellClick, onEvaluateClick, onInvestClick, onAdvisorClick, onEmiClick, onFindAgentsClick,
 }: NavbarProps) => {
   const { user, profile, signOut, openAuthModal } = useAuth();
 
@@ -722,7 +747,8 @@ const Navbar = ({
                 <div className="px-3 py-2.5 text-xs text-stone-500 leading-relaxed">Interior design partners coming soon to select markets.</div>
               </NavDropdown>
               <NavDropdown label="Advisor">
-                <DropdownMenuItem onClick={onAdvisorClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">Email an Agent</DropdownMenuItem>
+                <DropdownMenuItem onClick={onFindAgentsClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">Find an Agent</DropdownMenuItem>
+                <DropdownMenuItem onClick={onAdvisorClick} className="rounded-lg cursor-pointer py-2.5 px-3">Email an Agent</DropdownMenuItem>
                 <DropdownMenuItem onClick={onEvaluateClick} className="rounded-lg cursor-pointer py-2.5 px-3">Get a Valuation Estimate</DropdownMenuItem>
               </NavDropdown>
               <NavDropdown label="Invest">
@@ -891,6 +917,14 @@ const ProjectCard: React.FC<{
   const sizeRange = project.areaRange || '2,400 - 4,800 sq.ft.';
   const cStatus = project.constructionStatus || 'Ready to Move';
   const aiScore = project.aiScore || 85;
+  const listedAgo = timeAgo(project.createdAt);
+
+  // Card-level photo carousel — swipe through images without opening the listing, the way
+  // most real portals let you. Falls back to the single imageUrl when a listing doesn't have
+  // a gallery yet.
+  const cardImages = project.images && project.images.length > 1 ? project.images : [project.imageUrl];
+  const [imgIndex, setImgIndex] = useState(0);
+  const goToImg = (i: number, e: React.MouseEvent) => { e.stopPropagation(); setImgIndex(((i % cardImages.length) + cardImages.length) % cardImages.length); };
 
   // Single priority badge — RERA > Verified > For Rent — instead of stacking several,
   // which was one of the things making the old card feel cluttered.
@@ -910,19 +944,58 @@ const ProjectCard: React.FC<{
       <Card className="overflow-hidden border-stone-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full border hover:border-stone-300">
         <div className="aspect-[4/3] relative overflow-hidden shrink-0">
           <img
-            src={project.imageUrl || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80`}
+            src={cardImages[imgIndex] || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80`}
             alt={project.name}
             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
             referrerPolicy="no-referrer"
           />
 
-          {/* Top badging — one status badge + compact save/compare icons */}
+          {/* Card-level carousel controls — only rendered when there's more than one photo,
+              so single-image listings don't show useless arrows/dots. stopPropagation on
+              every control here so flipping photos never triggers onSelect underneath. */}
+          {cardImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => goToImg(imgIndex - 1, e)}
+                aria-label="Previous photo"
+                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-stone-900/40 hover:bg-stone-900/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={(e) => goToImg(imgIndex + 1, e)}
+                aria-label="Next photo"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-stone-900/40 hover:bg-stone-900/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <div className="absolute bottom-14 left-0 right-0 flex items-center justify-center gap-1">
+                {cardImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => goToImg(i, e)}
+                    aria-label={`View photo ${i + 1}`}
+                    className={`h-1 rounded-full transition-all ${i === imgIndex ? 'w-3 bg-white' : 'w-1 bg-white/50'}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Top badging — status + "listed X ago" freshness + compact save/compare icons */}
           <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-start gap-2">
-            {statusBadge ? (
-              <Badge className={`${statusBadge.className} border-none px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm`}>
-                {statusBadge.label}
-              </Badge>
-            ) : <span />}
+            <div className="flex flex-col items-start gap-1.5">
+              {statusBadge && (
+                <Badge className={`${statusBadge.className} border-none px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm`}>
+                  {statusBadge.label}
+                </Badge>
+              )}
+              {listedAgo && (
+                <Badge className="bg-white/85 backdrop-blur-md text-stone-700 border-none px-2.5 py-1 rounded-full text-[9px] font-bold shadow-sm">
+                  {listedAgo}
+                </Badge>
+              )}
+            </div>
 
             <div className="flex items-center gap-1.5">
               {onToggleCompare && (
@@ -1554,6 +1627,8 @@ const Dashboard = () => {
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [viewingBuilder, setViewingBuilder] = useState<string | null>(null);
   const [viewingAgentId, setViewingAgentId] = useState<string | null>(null);
+  const [isFindAgentsOpen, setIsFindAgentsOpen] = useState(false);
+  const [agentSearchQuery, setAgentSearchQuery] = useState('');
 
   // Favorites: signed-out visitors get a localStorage-backed list (so they can try the
   // feature before creating an account); signed-in users get it stored on their own
@@ -1587,6 +1662,72 @@ const Dashboard = () => {
       updateDoc(doc(db, 'users', user.uid), {
         favorites: isFavorited ? arrayRemove(id) : arrayUnion(id),
       }).catch((error) => { notify("Couldn't update your favorites. Please try again."); handleFirestoreError(error, OperationType.WRITE, 'users/favorites'); });
+    }
+  };
+
+  // Saved Searches — same signed-in-vs-local split as Favorites above. Deliberately named
+  // and labeled as "saved search" rather than "price alert": there's no email/push
+  // notification pipeline wired up anywhere in this app, so promising alerts would be a
+  // repeat of the exact "fabricated feature" problem flagged earlier. This saves the filter
+  // combination for one-click reapplication later — nothing more, nothing implied.
+  interface SavedSearch { id: string; label: string; filters: { browseMode: 'buy' | 'rent'; selectedCountry: string; searchQuery: string; budgetRange: string; selectedConstStatus: string; selectedBhkType: string; onlyReraVerified: boolean }; }
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      setSavedSearches(Array.isArray(profile?.savedSearches) ? profile.savedSearches : []);
+      return;
+    }
+    const saved = localStorage.getItem('jg_ai_estate_saved_searches');
+    if (saved) {
+      try { setSavedSearches(JSON.parse(saved)); } catch (e) { console.error(e); }
+    }
+  }, [user, profile]);
+
+  useEffect(() => {
+    if (user) return;
+    localStorage.setItem('jg_ai_estate_saved_searches', JSON.stringify(savedSearches));
+  }, [savedSearches, user]);
+
+  const handleSaveSearch = () => {
+    const label = window.prompt('Name this search (e.g. "Barcelona apartments under $800K")');
+    if (!label || !label.trim()) return;
+    const entry: SavedSearch = {
+      id: `${Date.now()}`,
+      label: label.trim(),
+      filters: { browseMode, selectedCountry, searchQuery, budgetRange, selectedConstStatus, selectedBhkType, onlyReraVerified },
+    };
+    const next = [...savedSearches, entry];
+    setSavedSearches(next);
+    if (user) {
+      updateDoc(doc(db, 'users', user.uid), { savedSearches: next }).catch((error) => {
+        notify("Couldn't save this search. Please try again.");
+        handleFirestoreError(error, OperationType.WRITE, 'users/savedSearches');
+      });
+    }
+    notify('Search saved — find it below the search bar any time.', 'success');
+  };
+
+  const handleApplySavedSearch = (s: SavedSearch) => {
+    setBrowseMode(s.filters.browseMode);
+    setSelectedCountry(s.filters.selectedCountry);
+    setSearchQuery(s.filters.searchQuery);
+    setBudgetRange(s.filters.budgetRange);
+    setSelectedConstStatus(s.filters.selectedConstStatus);
+    setSelectedBhkType(s.filters.selectedBhkType);
+    setOnlyReraVerified(s.filters.onlyReraVerified);
+    scrollToSection('catalog');
+  };
+
+  const handleDeleteSavedSearch = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = savedSearches.filter(s => s.id !== id);
+    setSavedSearches(next);
+    if (user) {
+      updateDoc(doc(db, 'users', user.uid), { savedSearches: next }).catch((error) => {
+        notify("Couldn't remove this saved search. Please try again.");
+        handleFirestoreError(error, OperationType.WRITE, 'users/savedSearches');
+      });
     }
   };
 
@@ -2229,6 +2370,7 @@ const Dashboard = () => {
         onInvestClick={() => scrollToSection('market')}
         onAdvisorClick={() => contactAdvisor("Hi! I'd like to speak with a JGEstate advisor about buying, selling, or renting a property.")}
         onEmiClick={() => setIsEmiOpen(true)}
+        onFindAgentsClick={() => setIsFindAgentsOpen(true)}
       />
       {/* Hero — full-bleed real-estate photography instead of the old flat white/gradient
           panel, closer to how SquareYards/99acres open (a dramatic property photo, not a
@@ -2508,8 +2650,44 @@ const Dashboard = () => {
                           Reset All
                         </Button>
                       )}
+
+                      {/* Saves the current filter combo for one tap re-use later — labeled
+                          "Save Search", not "alert", since there's no notification pipeline
+                          behind it yet. */}
+                      <Button
+                        variant="outline"
+                        onClick={handleSaveSearch}
+                        className="h-12 sm:h-14 px-4 sm:px-5 rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 border-stone-200 text-stone-600 hover:bg-stone-50"
+                        title="Save this search to revisit later"
+                      >
+                        <Bell className="w-4 h-4" />
+                        <span className="hidden sm:inline">Save Search</span>
+                      </Button>
                     </div>
                   </div>
+
+                  {/* Saved searches — click a chip to reapply that filter combo, X to remove */}
+                  {savedSearches.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 pt-4 mt-1 border-t border-stone-100">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mr-1">Saved:</span>
+                      {savedSearches.map(s => (
+                        <button
+                          key={s.id}
+                          onClick={() => handleApplySavedSearch(s)}
+                          className="group flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-stone-50 border border-stone-200 hover:border-brand-300 text-xs font-bold text-stone-600 hover:text-brand-600 transition-all"
+                        >
+                          {s.label}
+                          <span
+                            onClick={(e) => handleDeleteSavedSearch(s.id, e)}
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-stone-400 hover:bg-stone-200 hover:text-stone-700"
+                            aria-label={`Remove saved search ${s.label}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Collapsible Advanced Filters Drawer */}
                   {isFilterPanelExpanded && (
@@ -3404,6 +3582,17 @@ const Dashboard = () => {
                          <Building2 className="w-3.5 h-3.5 text-brand-600" />
                          {selectedProject.totalUnits} units total
                        </div>
+                       {/* Opens the shared EMI dialog pre-filled with THIS listing's actual
+                           price/currency — before this it only opened from the homepage hero
+                           with a hardcoded $500K default, disconnected from whatever property
+                           you were actually looking at. */}
+                       <button
+                         onClick={() => { setEmiForm(f => ({ ...f, price: selectedProject.basePrice, currency: selectedProject.currency })); setIsEmiOpen(true); }}
+                         className="px-4 py-2.5 bg-brand-50 border border-brand-100 rounded-xl text-xs font-bold text-brand-700 flex items-center gap-2 shadow-sm hover:bg-brand-100 transition-colors"
+                       >
+                         <Calculator className="w-3.5 h-3.5" />
+                         Mortgage Calculator
+                       </button>
                      </div>
 
                      {/* Neighborhood Proximities & Landmarks */}
@@ -3431,6 +3620,58 @@ const Dashboard = () => {
                         ))}
                       </div>
                     </section>
+
+                    {/* Price context vs. other JGEstate listings in the same city. This is
+                        deliberately built from the app's own live listing data (not invented
+                        numbers, and not dressed up as a government transaction registry we
+                        don't actually have) — the label says exactly what it is so nobody
+                        mistakes it for sourced third-party market data. */}
+                    {(() => {
+                      const parseAreaMid = (range?: string) => {
+                        if (!range) return null;
+                        const nums = range.match(/[\d,]+(\.\d+)?/g);
+                        if (!nums || nums.length === 0) return null;
+                        const vals = nums.map(n => parseFloat(n.replace(/,/g, '')));
+                        return vals.reduce((a, b) => a + b, 0) / vals.length;
+                      };
+                      const targetArea = parseAreaMid(selectedProject.areaRange);
+                      if (!targetArea) return null;
+                      const targetPpu = selectedProject.basePrice / targetArea;
+                      const comps = projects
+                        .filter(p => p.id !== selectedProject.id && p.city === selectedProject.city && (p.listingType || 'sale') === (selectedProject.listingType || 'sale'))
+                        .map(p => {
+                          const area = parseAreaMid(p.areaRange);
+                          return area ? { project: p, ppu: p.basePrice / area } : null;
+                        })
+                        .filter((c): c is { project: Project; ppu: number } => c !== null);
+                      if (comps.length < 2) return null;
+                      const avgPpu = comps.reduce((s, c) => s + c.ppu, 0) / comps.length;
+                      const diffPct = Math.round(((targetPpu - avgPpu) / avgPpu) * 100);
+                      const unitLabel = COUNTRIES.find(c => c.code === selectedProject.countryCode)?.unitLabel || 'sqft';
+                      const sortedComps = [...comps].sort((a, b) => a.ppu - b.ppu).slice(0, 4);
+                      return (
+                        <section className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-stone-400 flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-stone-500" />
+                            Price Context — {selectedProject.city}
+                          </h4>
+                          <p className="text-sm font-bold text-stone-800">
+                            Priced {formatPrice(Math.round(targetPpu), selectedProject.currency)}/{unitLabel} — {Math.abs(diffPct)}% {diffPct >= 0 ? 'above' : 'below'} the average of {comps.length} other {(selectedProject.listingType || 'sale') === 'rent' ? 'rental' : 'sale'} listings JGEstate currently tracks in {selectedProject.city}.
+                          </p>
+                          <div className="space-y-1.5">
+                            {sortedComps.map(c => (
+                              <div key={c.project.id} className="flex items-center justify-between text-xs border-t border-stone-200 pt-1.5 first:border-0 first:pt-0">
+                                <span className="text-stone-600 font-medium truncate max-w-[60%]">{c.project.name}</span>
+                                <span className="text-stone-800 font-bold shrink-0">{formatPrice(Math.round(c.ppu), selectedProject.currency)}/{unitLabel}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-stone-400 font-medium leading-relaxed">
+                            Based on other live listings on JGEstate in {selectedProject.city} — not an external transaction registry. Updates as listings change.
+                          </p>
+                        </section>
+                      );
+                    })()}
 
                     <section className="space-y-4">
                       <h3 className="text-lg sm:text-2xl font-bold text-stone-900 flex items-center gap-2.5">
@@ -4165,12 +4406,15 @@ const Dashboard = () => {
                 />
               </div>
               <div className="space-y-2 sm:space-y-3">
-                <Label className="micro-label">Loan Tenure (years)</Label>
-                <Input
-                  type="number"
+                <Label className="micro-label">Loan Tenure — {emiForm.years} {emiForm.years === 1 ? 'year' : 'years'}</Label>
+                <input
+                  type="range"
+                  min={1}
+                  max={30}
+                  step={1}
                   value={emiForm.years}
                   onChange={(e) => setEmiForm({ ...emiForm, years: Number(e.target.value) })}
-                  className="rounded-xl border-stone-100 bg-stone-50 font-bold"
+                  className="w-full accent-brand-600 mt-3"
                 />
               </div>
             </div>
@@ -4757,6 +5001,71 @@ const Dashboard = () => {
               </>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Find Agents directory — browsing/search entry point into the agent roster. The
+          individual agent storefront dialog below already existed (reachable once you knew
+          an agent's id via a project); this is the missing piece — a place to actually find
+          one in the first place, the way propertyfinder.ae's "Find Agents" page works. */}
+      <Dialog open={isFindAgentsOpen} onOpenChange={setIsFindAgentsOpen}>
+        <DialogContent
+          onClose={() => setIsFindAgentsOpen(false)}
+          className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col bg-white border-stone-200 rounded-3xl shadow-2xl"
+        >
+          <DialogHeader className="p-6 sm:p-8 pb-0 shrink-0">
+            <DialogTitle className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">Find an Agent</DialogTitle>
+            <DialogDescription className="text-stone-500 font-medium">
+              JGEstate's advisor roster, searchable by name, title, or region.
+            </DialogDescription>
+            <div className="relative pt-2">
+              <Search className="absolute left-4 top-1/2 translate-y-[15%] w-4 h-4 text-stone-400" />
+              <Input
+                value={agentSearchQuery}
+                onChange={(e) => setAgentSearchQuery(e.target.value)}
+                placeholder="Search by name, title, or region..."
+                className="pl-11 h-12 rounded-xl bg-stone-50 border-stone-200 font-medium"
+              />
+            </div>
+          </DialogHeader>
+          <ScrollArea className="flex-1 min-h-0 p-6 sm:p-8 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {AGENT_ROSTER.filter(a => {
+                const q = agentSearchQuery.trim().toLowerCase();
+                if (!q) return true;
+                return [a.name, a.title, ...a.regions].some(f => f.toLowerCase().includes(q));
+              }).map(a => (
+                <button
+                  key={a.id}
+                  onClick={() => { setIsFindAgentsOpen(false); setViewingAgentId(a.id); }}
+                  className="text-left bg-stone-50 hover:bg-white border border-stone-100 hover:border-brand-200 hover:shadow-md rounded-2xl p-5 transition-all space-y-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center shrink-0">
+                      {a.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-stone-900 truncate">{a.name}</p>
+                      <p className="text-xs font-semibold text-stone-500 truncate">{a.title}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-stone-500 leading-relaxed line-clamp-2">{a.bio}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {a.regions.map(r => (
+                      <span key={r} className="px-2 py-0.5 bg-brand-50 text-brand-700 rounded-full text-[10px] font-bold uppercase tracking-wider">{r}</span>
+                    ))}
+                  </div>
+                </button>
+              ))}
+              {AGENT_ROSTER.filter(a => {
+                const q = agentSearchQuery.trim().toLowerCase();
+                if (!q) return true;
+                return [a.name, a.title, ...a.regions].some(f => f.toLowerCase().includes(q));
+              }).length === 0 && (
+                <p className="col-span-full text-center text-sm text-stone-400 font-medium py-10">No advisors match that search.</p>
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
