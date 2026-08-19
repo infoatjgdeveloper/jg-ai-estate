@@ -479,7 +479,7 @@ const getAssistantReply = (raw: string): string => {
     return "Hello! I can help with how verification works, listing fees, which markets we cover, or EMI estimates. What would you like to know?";
   }
   if (/verif|scam|trust|safe|fraud/.test(q)) {
-    return "Every listing passes a 12-point verification process before it goes live, and buyers verify their identity too before contact details are shared — verification runs both ways. Payments route through licensed processors in each market, never held by this platform.";
+    return "Every account signs in with real ID (Google or email) before listing or contacting anyone. Developers can attach a real registration/license ID, which shows as a badge, and our team can mark a listing Verified after review — anyone can also report a listing that looks off. Payments route through licensed processors in each market, never held by this platform.";
   }
   if (/how.*work|process|step/.test(q)) {
     return "For buyers: search, get ID-verified, compare properties, then close through a licensed local payment processor. For agents, builders and investors: create an account, list your inventory, manage every enquiry from one dashboard, and get discovered through your own Builder Portfolio or Broker Storefront page.";
@@ -2736,10 +2736,17 @@ const Dashboard = () => {
               <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
               Live Across {COUNTRIES.length} Countries
             </Badge>
-            <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit">
-              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 text-amber-400 fill-amber-400" />
-              4.8 Rated · 2,300+ Closed Deals
-            </Badge>
+            {/* This used to hardcode "4.8 Rated · 2,300+ Closed Deals" — there is no rating
+                system or deal-tracking anywhere in this app (the property dialog's own seller
+                rating explicitly shows "unavailable yet"), so that badge was a flat fabrication
+                sitting in the very first thing a visitor sees. Swapped for the one number here
+                that's actually live and real. */}
+            {projects.length > 0 && (
+              <Badge className="bg-white/10 backdrop-blur-md text-white border-white/20 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full micro-label text-[10px] sm:text-xs w-fit">
+                <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2 text-amber-400 fill-amber-400" />
+                {projects.length} Live Listings
+              </Badge>
+            )}
           </motion.div>
           <motion.h1 variants={heroItemVariants} className="font-serif text-4xl sm:text-6xl md:text-7xl font-semibold text-white tracking-tight leading-[1.05]">
             Know what a property
@@ -3394,7 +3401,7 @@ const Dashboard = () => {
                 className="absolute -top-5 -right-4 sm:-top-6 sm:-right-6 bg-stone-900 rounded-2xl shadow-xl p-4 sm:p-5 flex items-center gap-2"
               >
                 <ShieldCheck className="w-5 h-5 text-brand-400 shrink-0" />
-                <p className="text-white text-xs font-bold leading-tight">12-Point<br />Verification</p>
+                <p className="text-white text-xs font-bold leading-tight">ID-Verified<br />Accounts</p>
               </motion.div>
             </div>
           </Reveal>
@@ -3487,7 +3494,7 @@ const Dashboard = () => {
             { value: `${COUNTRIES.length}`, label: 'Countries Live' },
             { value: `${ALL_CITIES.length}`, label: 'Cities Tracked' },
             { value: `${COMPOSITE_YTD_GROWTH}%`, label: 'Global Index, YTD' },
-            { value: '12-Point', label: 'Verification Standard' },
+            { value: 'ID-Verified', label: 'Accounts Only' },
           ].map((s) => (
             <div key={s.label} className="text-center lg:text-left space-y-1">
               <p className="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight"><CountUp value={s.value} /></p>
@@ -3675,40 +3682,6 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
-        <div className="max-w-7xl mx-auto space-y-10 sm:space-y-14">
-          <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
-            <p className="micro-label text-brand-600">What People Are Saying</p>
-            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Trusted by buyers, agents and investors</h2>
-          </Reveal>
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-          >
-            {[
-              { quote: "Found and closed on an apartment in Lisbon without ever leaving New York. The verification process made it feel safe.", name: 'Amara O.', role: 'Buyer, United States' },
-              { quote: "Listing our projects here cut our time-to-sale significantly — the market data alone is worth it.", name: 'Rajiv M.', role: 'Developer, India' },
-              { quote: "I use the global index every week to decide where to allocate next. It's the first dashboard I open.", name: 'Sophie L.', role: 'Investor, Germany' },
-            ].map((t) => (
-              <motion.div key={t.name} variants={staggerItem} className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 space-y-5">
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
-                </div>
-                <p className="text-sm sm:text-base text-stone-700 leading-relaxed">"{t.quote}"</p>
-                <div>
-                  <p className="text-sm font-bold text-stone-900">{t.name}</p>
-                  <p className="text-xs text-stone-400 font-medium">{t.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
       {/* Property News & Guides — market commentary and buyer education, the kind of
           content MagicBricks runs under "Property Pulse" / their Buyer's Guide. */}
       <section className="py-16 sm:py-24 px-4 sm:px-8 bg-stone-50 border-b border-stone-200">
@@ -3783,7 +3756,7 @@ const Dashboard = () => {
             {[
               { q: 'Is listing a property really free?', a: 'Yes — individual agents can list up to 5 active properties at no cost. Agencies and builders with more inventory can upgrade to Professional or Enterprise.' },
               { q: 'What currency are prices shown in?', a: "Every listing shows in its own market's local currency. Filters and comparisons use USD as a common baseline, but nothing converts automatically at checkout." },
-              { q: 'How are sellers verified?', a: 'Every seller goes through a 12-point ID and legal-compliance check before their listing goes live.' },
+              { q: 'How are sellers verified?', a: 'Every seller signs in with a real, ID-linked account. Developers can attach a real RERA/license registration number, which shows as a badge on the listing, and admins can mark a listing "Verified" after manual review. Anyone can report a listing that looks wrong.' },
               { q: 'Does this platform hold my payment?', a: 'No. Payments are always routed through licensed third-party payment processors in the relevant market — this platform never holds client funds.' },
             ].map((f) => (
               <div key={f.q} className="space-y-2">
