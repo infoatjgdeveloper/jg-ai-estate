@@ -144,5 +144,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Listing reports (the "Report" button on the property dialog). Anyone can file one —
+    // including signed-out visitors, since requiring an account to report a scam listing
+    // defeats the point — but only admins can read the queue back. No update/delete for
+    // regular users: once filed, a report can't be edited or withdrawn from the client.
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if request.resource.data.keys().hasAll(['projectId', 'reason', 'createdAt']) &&
+                      request.resource.data.projectId is string &&
+                      request.resource.data.reason is string &&
+                      request.resource.data.reason.size() > 0 && request.resource.data.reason.size() < 500;
+      allow update, delete: if isAdmin();
+    }
   }
 }

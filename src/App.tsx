@@ -84,7 +84,9 @@ import {
   EyeOff,
   Loader2,
   Bell,
-  Calculator
+  Calculator,
+  Share2,
+  Flag
 } from 'lucide-react';
 
 import { 
@@ -3406,6 +3408,95 @@ const Dashboard = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-24 md:space-y-40 pt-16 sm:pt-24 relative z-30">
+        {/* Explore Popular Cities — deliberately built from real counts (how many live
+            JGEstate listings actually exist in each city) rather than invented "lifestyle"
+            ratings or star scores we have no survey data to back up. Only shows cities that
+            currently have at least one listing, ranked by how many, so it reflects the
+            catalog as it actually is. */}
+        {(() => {
+          const popularCities = ALL_CITIES
+            .map(c => ({ ...c, count: projects.filter(p => p.city === c.city).length, country: COUNTRIES.find(co => co.name === c.countryName) }))
+            .filter(c => c.count > 0)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 8);
+          if (popularCities.length === 0) return null;
+          return (
+            <div className="space-y-8 sm:space-y-10">
+              <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
+                <p className="micro-label text-brand-600">Explore By City</p>
+                <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Popular cities on JGEstate</h2>
+                <p className="text-sm sm:text-base text-stone-500 font-medium">Ranked by how many verified listings JGEstate currently tracks in each city — not a popularity score.</p>
+              </Reveal>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                {popularCities.map(c => (
+                  <button
+                    key={c.city}
+                    onClick={() => { setSearchQuery(c.city); setBrowseMode('buy'); scrollToSection('catalog'); }}
+                    className="text-left bg-white border border-stone-200 hover:border-brand-300 hover:shadow-md rounded-2xl p-4 sm:p-5 transition-all space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl">{c.country?.flag}</span>
+                      <span className={`text-xs font-bold ${c.yoyChange >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {c.yoyChange >= 0 ? '+' : ''}{c.yoyChange}%
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-stone-900">{c.city}</p>
+                      <p className="text-[11px] text-stone-400 font-semibold">{c.countryName}</p>
+                    </div>
+                    <p className="text-[11px] font-bold text-brand-600">{c.count} {c.count === 1 ? 'listing' : 'listings'}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* New & Off-Plan Projects — a dedicated browse entry point for pre-launch and
+            under-construction inventory, mirroring the "New Projects" section every major
+            portal leads with. Reuses the same ProjectCard and filteredProjects-adjacent data
+            (real constructionStatus values already on each listing) rather than a separate
+            content type. */}
+        {(() => {
+          const offPlanProjects = projects
+            .filter(p => p.constructionStatus && p.constructionStatus !== 'Ready to Move')
+            .sort((a, b) => (a.constructionStatus === 'Pre-Launch' ? -1 : 1) - (b.constructionStatus === 'Pre-Launch' ? -1 : 1))
+            .slice(0, 4);
+          if (offPlanProjects.length === 0) return null;
+          return (
+            <div className="space-y-8 sm:space-y-10">
+              <Reveal className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div className="max-w-2xl space-y-3 sm:space-y-4">
+                  <p className="micro-label text-brand-600">New & Off-Plan</p>
+                  <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Pre-launch &amp; under-construction projects</h2>
+                  <p className="text-sm sm:text-base text-stone-500 font-medium">{offPlanProjects.length} of {projects.filter(p => p.constructionStatus !== 'Ready to Move').length} off-plan listings JGEstate currently tracks.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => { setIsFilterPanelExpanded(true); scrollToSection('catalog'); }}
+                  className="border-stone-200 text-stone-700 hover:border-brand-300 hover:text-brand-600 font-bold rounded-xl px-5 py-3 text-sm shrink-0 self-start sm:self-auto"
+                >
+                  See All New Projects <ArrowRight className="ml-1.5 w-4 h-4" />
+                </Button>
+              </Reveal>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                {offPlanProjects.map(project => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onSelect={handleSelectProject}
+                    isFavorite={favorites.includes(project.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    isComparing={compareIds.includes(project.id)}
+                    onToggleCompare={handleToggleCompare}
+                    onViewPortfolio={handleViewBuilder}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Global Market Index & Verification — was an unlabeled chart next to a wall of
             30+ individual country buttons with no section header; redesigned into a
             proper header, a region-level breakdown (Europe/N. America/Middle East/Asia)
@@ -3478,11 +3569,58 @@ const Dashboard = () => {
               <ScrollArea className="flex-1 min-h-0">
               <div className="min-h-[220px] sm:min-h-[350px] md:min-h-[420px] h-[35vh] sm:h-[420px] relative">
                 <img
-                  src={selectedProject.imageUrl || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80`} 
+                  src={selectedProject.imageUrl || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80`}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/30 to-transparent" />
+
+                {/* Save / Share / Report — sits opposite the close button. Report actually
+                    writes to a `reports` collection (see firestore.rules) rather than being
+                    a decorative button that does nothing; Share copies a real shareable link;
+                    Save reuses the same favorite toggle used everywhere else in the app. */}
+                <div className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center gap-2 z-10">
+                  <button
+                    onClick={(e) => handleToggleFavorite(selectedProject.id, e)}
+                    aria-label={favorites.includes(selectedProject.id) ? 'Remove from saved' : 'Save property'}
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-colors"
+                  >
+                    <Heart className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${favorites.includes(selectedProject.id) ? 'fill-rose-500 text-rose-500' : 'text-stone-600'}`} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/property/${selectedProject.id}`;
+                      navigator.clipboard?.writeText(url).then(
+                        () => notify('Link copied to clipboard.', 'success'),
+                        () => notify("Couldn't copy the link. Please try again.")
+                      );
+                    }}
+                    aria-label="Share this listing"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-colors"
+                  >
+                    <Share2 className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-stone-600" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const reason = window.prompt('What\'s wrong with this listing? (e.g. "Price seems off", "Photos don\'t match", "Suspected fraud")');
+                      if (!reason || !reason.trim()) return;
+                      addDoc(collection(db, 'reports'), {
+                        projectId: selectedProject.id,
+                        projectName: selectedProject.name,
+                        reason: reason.trim().slice(0, 500),
+                        reporterId: user?.uid || null,
+                        createdAt: serverTimestamp(),
+                      }).then(
+                        () => notify('Thanks — we\'ve logged this for review.', 'success'),
+                        (error) => { notify("Couldn't submit your report. Please try again."); handleFirestoreError(error, OperationType.CREATE, 'reports'); }
+                      );
+                    }}
+                    aria-label="Report this listing"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-colors"
+                  >
+                    <Flag className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-stone-600" />
+                  </button>
+                </div>
                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 md:p-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex flex-wrap gap-2">
@@ -3526,7 +3664,7 @@ const Dashboard = () => {
               {/* Asymmetric photo grid gallery (Zillow/ImmoScout24 style) — every tile opens
                   the fullscreen lightbox below at the matching image index. */}
               {selectedProject.images && selectedProject.images.length > 1 && (
-                <div className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
+                <div id="pd-gallery" className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
                   <div className="grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 h-[160px] sm:h-[220px] rounded-2xl overflow-hidden">
                     <button
                       type="button"
@@ -3558,8 +3696,32 @@ const Dashboard = () => {
                 </div>
               )}
 
+              {/* Sticky in-dialog sub-nav — a lighter-weight stand-in for full tab panels
+                  (Gallery/Description/Amenities/etc. as separate views) given how much this
+                  dialog already renders; scrolling to an anchor within the same ScrollArea
+                  gets the same "jump straight to what you want" benefit without restructuring
+                  every section below into conditionally-rendered panels. Sticks to the top of
+                  the scroll area once you scroll past the photos, same as Property Finder's. */}
+              <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-stone-100 px-5 sm:px-8 md:px-10 flex items-center gap-5 sm:gap-7 overflow-x-auto scrollbar-none">
+                {[
+                  { id: 'pd-gallery', label: 'Gallery' },
+                  { id: 'pd-details', label: 'Details' },
+                  { id: 'pd-price', label: 'Price Context' },
+                  { id: 'pd-location', label: 'Location' },
+                  { id: 'pd-units', label: 'Units' },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => document.getElementById(t.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className="shrink-0 py-3.5 text-xs font-bold uppercase tracking-wider text-stone-500 hover:text-brand-600 whitespace-nowrap transition-colors"
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10 p-5 sm:p-8 md:p-10">
-                  <div className="lg:col-span-2 space-y-8 sm:space-y-12">
+                  <div id="pd-details" className="lg:col-span-2 space-y-8 sm:space-y-12">
                      {/* Quick fact chips: price/area, price/sqm, status */}
                      <div className="flex flex-wrap gap-2.5 sm:gap-3">
                        <div className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-700 flex items-center gap-2 shadow-sm">
@@ -3596,7 +3758,7 @@ const Dashboard = () => {
                      </div>
 
                      {/* Neighborhood Proximities & Landmarks */}
-                     <section className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
+                     <section id="pd-location" className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
                       <h4 className="text-sm font-bold uppercase tracking-wider text-stone-400 flex items-center gap-2">
                         <Compass className="w-4 h-4 text-stone-500" />
                         Travel Times & Nearby Connections
@@ -3650,7 +3812,7 @@ const Dashboard = () => {
                       const unitLabel = COUNTRIES.find(c => c.code === selectedProject.countryCode)?.unitLabel || 'sqft';
                       const sortedComps = [...comps].sort((a, b) => a.ppu - b.ppu).slice(0, 4);
                       return (
-                        <section className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
+                        <section id="pd-price" className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
                           <h4 className="text-sm font-bold uppercase tracking-wider text-stone-400 flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-stone-500" />
                             Price Context — {selectedProject.city}
@@ -3695,7 +3857,7 @@ const Dashboard = () => {
                     </section>
 
                     {/* Unit Grid segment with interactive filter */}
-                    <section className="space-y-6 pt-2">
+                    <section id="pd-units" className="space-y-6 pt-2">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
                         <div>
                           <h3 className="text-lg sm:text-2xl font-bold text-stone-900">Interviews & Unit Inventories</h3>
