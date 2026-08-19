@@ -2704,7 +2704,7 @@ const Dashboard = () => {
         onRentClick={() => { setBrowseMode('rent'); scrollToSection('catalog'); }}
         onSellClick={() => (user ? setIsLaunchOpen(true) : openAuthModal('signup'))}
         onEvaluateClick={() => setIsEvaluateOpen(true)}
-        onInvestClick={() => scrollToSection('market')}
+        onInvestClick={() => scrollToSection('catalog')}
         onAdvisorClick={() => contactAdvisor("Hi! I'd like to speak with a JGEstate advisor about buying, selling, or renting a property.")}
         onEmiClick={() => setIsEmiOpen(true)}
         onFindAgentsClick={() => setIsFindAgentsOpen(true)}
@@ -2756,7 +2756,7 @@ const Dashboard = () => {
           <motion.div variants={heroItemVariants} className="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto">
             {[
               { label: 'Buy a Home', icon: UserIcon, onClick: () => { setBrowseMode('buy'); scrollToSection('catalog'); } },
-              { label: 'Invest in Property', icon: TrendingUp, onClick: () => scrollToSection('market') },
+              { label: 'Invest in Property', icon: TrendingUp, onClick: () => scrollToSection('catalog') },
               { label: 'List / Sell a Property', icon: Briefcase, onClick: () => (user ? setIsLaunchOpen(true) : openAuthModal('signup')) },
             ].map((p) => (
               <button
@@ -3455,7 +3455,7 @@ const Dashboard = () => {
                 role: 'Investors',
                 copy: 'Track the global market index, compare city-level yields, and evaluate assets before you commit capital.',
                 cta: 'View Market Data',
-                onClick: () => scrollToSection('market'),
+                onClick: () => scrollToSection('catalog'),
               },
             ].map((p) => (
               <motion.div key={p.role} variants={staggerItem} className="group bg-stone-800/60 hover:bg-stone-800 border border-stone-700 hover:border-brand-500/50 rounded-3xl p-6 sm:p-8 flex flex-col justify-between gap-6 sm:gap-8 transition-all">
@@ -3885,57 +3885,6 @@ const Dashboard = () => {
           );
         })()}
 
-        {/* Global Market Index & Verification — was an unlabeled chart next to a wall of
-            30+ individual country buttons with no section header; redesigned into a
-            proper header, a region-level breakdown (Europe/N. America/Middle East/Asia)
-            instead of one button per country, and copy that reflects that verification
-            runs on both the buyer and seller side. */}
-        <div id="market" className="space-y-10 sm:space-y-14">
-          <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
-            <p className="micro-label text-brand-600">Live Market Index</p>
-            <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Real data, verified on both sides</h2>
-            <p className="text-sm sm:text-base text-stone-500 font-medium">One composite index built from every tracked city, next to exactly how trust works here.</p>
-          </Reveal>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
-            <Reveal className="lg:col-span-2">
-              <MarketAnalytics />
-            </Reveal>
-            <Reveal delay={0.1} className="space-y-6">
-              <Card className="bg-stone-900 p-6 sm:p-10 rounded-3xl flex flex-col justify-between shadow-sm border-none">
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="bg-brand-500/15 w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center">
-                    <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-brand-400" />
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Verified & Secure, Both Sides</h3>
-                  <p className="text-sm text-stone-400 leading-relaxed font-medium">
-                    Every listing passes a 12-point verification process before it goes live — and buyers verify their identity too before any contact details are shared. Payments route through licensed processors in each market, never held by this platform.
-                  </p>
-                </div>
-              </Card>
-              <Card className="bg-white border-stone-200 p-6 sm:p-8 rounded-3xl shadow-sm space-y-5">
-                <p className="micro-label text-stone-400">{COUNTRIES.length} Markets, By Region</p>
-                <div className="space-y-3">
-                  {(['Europe', 'North America', 'Middle East', 'Asia'] as const).map((region) => {
-                    const count = COUNTRIES.filter(c => c.region === region).length;
-                    if (count === 0) return null;
-                    return (
-                      <div key={region} className="flex items-center justify-between py-2 border-b border-stone-100 last:border-0">
-                        <span className="text-sm font-bold text-stone-800">{region}</span>
-                        <span className="text-sm font-bold text-brand-600">{count} {count === 1 ? 'market' : 'markets'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={() => scrollToSection('catalog')}
-                  className="w-full text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center justify-center gap-1.5 pt-1"
-                >
-                  Browse every market <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </Card>
-            </Reveal>
-          </div>
-        </div>
       </div>
 
       {/* Project Details Dialog */}
@@ -5357,7 +5306,7 @@ const Dashboard = () => {
             <button onClick={() => { setBrowseMode('rent'); scrollToSection('catalog'); }} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Rent</button>
             <button onClick={() => (user ? setIsLaunchOpen(true) : openAuthModal('signup'))} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Sell</button>
             <button onClick={() => setIsEvaluateOpen(true)} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Evaluate</button>
-            <button onClick={() => scrollToSection('market')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Invest</button>
+            <button onClick={() => scrollToSection('catalog')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Invest</button>
           </div>
 
           <div className="space-y-3">
