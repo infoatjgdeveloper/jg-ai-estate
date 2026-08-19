@@ -64,12 +64,17 @@ function DialogContent({
     >
       {children}
       {showCloseButton && (
+        // A plain ghost button with no background of its own (the old style) is nearly
+        // invisible on dialogs like the property detail modal, which opens straight into a
+        // photo — a pale gray "X" over a busy image is very easy to miss entirely. Giving it
+        // a permanent white circle + shadow makes it equally easy to spot whether it's sitting
+        // on a photo or on a plain white dialog body.
         <Button
           variant="ghost"
-          className="absolute top-6 right-6 rounded-full w-12 h-12 p-0 hover:bg-stone-100"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 rounded-full w-10 h-10 sm:w-12 sm:h-12 p-0 bg-white/95 shadow-lg border border-stone-200 hover:bg-white z-10"
           onClick={onClose}
         >
-          <XIcon className="w-6 h-6 text-stone-400" />
+          <XIcon className="w-5 h-5 sm:w-6 sm:h-6 text-stone-600" />
           <span className="sr-only">Close</span>
         </Button>
       )}

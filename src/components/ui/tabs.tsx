@@ -43,7 +43,15 @@ function TabsList({ className, ...props }: React.HTMLAttributes<HTMLDivElement>)
   return (
     <div
       data-slot="tabs-list"
-      className={cn("inline-flex items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground", className)}
+      // justify-start, not justify-center: when a TabsList's children are wider than the
+      // list itself (e.g. 5 tabs in a horizontally-scrollable row on a narrower screen),
+      // centering the overflowing flex content pushes the overflow out equally on BOTH
+      // sides — but a scroll container can't scroll to a negative offset, so the left-side
+      // overflow becomes permanently unreachable and gets clipped, while the right-side
+      // overflow can still be scrolled into. That's what made the first tab look sliced off
+      // on its left edge no matter what padding/breakpoint tweaks were applied around it —
+      // the real bug was this container centering content it doesn't have room for.
+      className={cn("inline-flex items-center justify-start rounded-lg bg-muted p-1 text-muted-foreground", className)}
       {...props}
     />
   )

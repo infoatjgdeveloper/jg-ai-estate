@@ -2378,13 +2378,14 @@ const Dashboard = () => {
               <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold text-stone-900 tracking-tight">Explore Properties</h2>
               <p className="micro-label text-brand-600">Verified Listings Across {COUNTRIES.length} Countries</p>
             </div>
-            {/* overflow-x-auto lets this row scroll horizontally when narrow, but a scroll
-                container with no padding of its own clips flush against its first/last
-                child's rounded corners the moment it scrolls even slightly — a small p-0.5
-                buffer keeps the active pill's rounded edge fully visible instead of looking
-                cut off. Also widened the flex-col->flex-row breakpoint (lg->xl) above so this
-                row has more room before the tab list is forced to share horizontal space. */}
-            <div className="w-full xl:w-auto overflow-x-auto scrollbar-none pb-2 p-0.5 -m-0.5">
+            {/* shrink-0: without it, this flex row would compress the tab list below its
+                natural width to make room for the heading beside it, forcing horizontal
+                scroll even on wide desktop screens — and TabsList centers overflowing
+                content by default (fixed in tabs.tsx), which permanently clips whatever
+                scrolls past the left edge since a scroll container can't scroll negative.
+                Keeping this at its full natural width means it never needs to overflow or
+                scroll in the first place; the heading beside it wraps instead if needed. */}
+            <div className="w-full xl:w-auto shrink-0 overflow-x-auto scrollbar-none pb-2 p-0.5 -m-0.5">
               <TabsList className="bg-stone-100 p-1 md:p-2 rounded-2xl md:rounded-3xl border border-stone-200 flex w-max xl:w-auto">
                 <TabsTrigger value="browse" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                   Explore
@@ -3288,8 +3289,17 @@ const Dashboard = () => {
         >
           {selectedProject && (
             <>
-              <div className="min-h-[220px] sm:min-h-[350px] md:min-h-[420px] h-[35vh] sm:h-[420px] relative shrink-0">
-                <img 
+              {/* The hero photo and thumbnail grid used to be pinned outside this ScrollArea
+                  (shrink-0), with only the text/specs body scrollable below them. On anything
+                  but a very tall screen that left just a sliver of actual scrollable space —
+                  scrolling while your cursor was over the (much larger) photo area did nothing,
+                  which is exactly the "scrolling doesn't work" bug. Wrapping everything in one
+                  ScrollArea, Zillow/Airbnb-style, means the hero photo scrolls away with the
+                  rest of the content and the whole dialog is scrollable no matter where you
+                  point the cursor. */}
+              <ScrollArea className="flex-1 min-h-0">
+              <div className="min-h-[220px] sm:min-h-[350px] md:min-h-[420px] h-[35vh] sm:h-[420px] relative">
+                <img
                   src={selectedProject.imageUrl || `https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80`} 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -3338,7 +3348,7 @@ const Dashboard = () => {
               {/* Asymmetric photo grid gallery (Zillow/ImmoScout24 style) — every tile opens
                   the fullscreen lightbox below at the matching image index. */}
               {selectedProject.images && selectedProject.images.length > 1 && (
-                <div className="shrink-0 px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
+                <div className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
                   <div className="grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 h-[160px] sm:h-[220px] rounded-2xl overflow-hidden">
                     <button
                       type="button"
@@ -3370,8 +3380,7 @@ const Dashboard = () => {
                 </div>
               )}
 
-              <ScrollArea className="flex-1 p-5 sm:p-8 md:p-10">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10 p-5 sm:p-8 md:p-10">
                   <div className="lg:col-span-2 space-y-8 sm:space-y-12">
                      {/* Quick fact chips: price/area, price/sqm, status */}
                      <div className="flex flex-wrap gap-2.5 sm:gap-3">
