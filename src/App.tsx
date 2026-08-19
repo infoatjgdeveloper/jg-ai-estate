@@ -4282,11 +4282,11 @@ const Dashboard = () => {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-stone-900 truncate">{selectedProject.developerName}</p>
-                          <div className="flex items-center gap-1 text-amber-500">
+                          <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                              <Star key={i} className="w-3 h-3 text-stone-300" />
                             ))}
-                            <span className="text-[10px] font-bold text-stone-400 ml-1">Seller rating unavailable yet</span>
+                            <span className="text-[10px] font-bold text-stone-400 ml-1">No ratings yet</span>
                           </div>
                         </div>
                       </div>
