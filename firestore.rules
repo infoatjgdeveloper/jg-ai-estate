@@ -157,5 +157,20 @@ service cloud.firestore {
                       request.resource.data.reason.size() > 0 && request.resource.data.reason.size() < 500;
       allow update, delete: if isAdmin();
     }
+
+    // Real leads: written the moment someone clicks "Contact" on a specific listing (see
+    // logInquiry in App.tsx). Anyone (including signed-out visitors) can create one — same
+    // reasoning as reports, a genuine buyer inquiry shouldn't require an account. Only the
+    // listing's own developer (or an admin) can ever read them back, since these contain a
+    // real message and optionally the sender's uid.
+    match /inquiries/{inquiryId} {
+      allow read: if isOwner(resource.data.developerId) || isAdmin();
+      allow create: if request.resource.data.keys().hasAll(['projectId', 'developerId', 'message', 'createdAt']) &&
+                      request.resource.data.projectId is string &&
+                      request.resource.data.developerId is string &&
+                      request.resource.data.message is string &&
+                      request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 1000;
+      allow update, delete: if isAdmin();
+    }
   }
 }

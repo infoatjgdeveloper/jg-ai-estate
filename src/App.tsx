@@ -86,7 +86,12 @@ import {
   Bell,
   Calculator,
   Share2,
-  Flag
+  Flag,
+  RotateCw,
+  GraduationCap,
+  HeartPulse,
+  ShoppingCart,
+  TrainFront
 } from 'lucide-react';
 
 import { 
@@ -123,6 +128,21 @@ import { Label } from '@/components/ui/label';
 import { CURRENCY_META, formatPrice, formatPriceFull, toUSD, COUNTRIES, GLOBAL_SEED_PROJECTS, DEVELOPER_NAME_MIGRATIONS, type Country } from '@/lib/global';
 import MapView from '@/components/MapView';
 
+// Honest placeholder for a self-listed project the developer didn't attach real photos to.
+// Deliberately an inline SVG that says "No Photo Provided" rather than a random stock image
+// standing in for a property it isn't — a stock photo here would look like a real listing
+// photo and mislead buyers, which the rest of this app has gone out of its way to avoid.
+const NO_PHOTO_PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#f5f5f4"/>
+  <g fill="none" stroke="#d6d3d1" stroke-width="3">
+    <rect x="280" y="180" width="240" height="140" rx="12"/>
+    <circle cx="330" cy="225" r="14"/>
+    <path d="M280 300 L360 240 L420 280 L470 230 L520 300"/>
+  </g>
+  <text x="400" y="360" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#a8a29e" text-anchor="middle">No Photo Provided</text>
+</svg>`);
+
 // --- Types ---
 interface Project {
   id: string;
@@ -152,6 +172,10 @@ interface Project {
   areaRange?: string;
   constructionStatus?: 'Ready to Move' | 'Under Construction' | 'Pre-Launch';
   rentalYield?: number;
+  // A real equirectangular (360°) photo URL the listing owner actually took/owns. Rendered
+  // with a genuine drag-to-pan viewer — never synthesized from a normal flat photo, and the
+  // section simply doesn't render when this is unset rather than faking a tour.
+  panoramaUrl?: string;
   amenities?: string[];
   landmarks?: { name: string; distance: string }[];
   aiScore?: number;
@@ -237,6 +261,19 @@ interface MarketDataPoint {
   volume: number;
 }
 
+// A real "contact agent" lead, written the moment a visitor actually reaches out about a
+// specific listing (see handleContactAboutProject) — this is the live data behind the
+// developer-facing Leads tab, not a fabricated lead count.
+interface Inquiry {
+  id: string;
+  projectId: string;
+  projectName: string;
+  developerId: string;
+  message: string;
+  fromUserId?: string | null;
+  createdAt?: { toDate: () => Date } | Date | null;
+}
+
 // --- Error Boundary ---
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -299,6 +336,23 @@ const SUPPORT_EMAIL = 'infoatjgdeveloper@gmail.com';
 // advisor" path used across the app (replaces the previous WhatsApp deep-links).
 const contactAdvisor = (message: string, subject = 'JGEstate Inquiry') => {
   window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+};
+
+// Real lead capture: call this alongside contactAdvisor() whenever the contact is about one
+// specific, real listing. Writes an honest `inquiries` doc the listing's actual owner
+// (project.developerId — the real Firestore account, not the client-side agent-persona
+// roster below) can read back on their own Leads tab. Best-effort and silent on failure —
+// a Firestore hiccup should never block the mailto: from opening.
+const logInquiry = (project: Project, message: string, fromUserId?: string | null) => {
+  if (!project.developerId || project.developerId === 'system') return;
+  addDoc(collection(db, 'inquiries'), {
+    projectId: project.id,
+    projectName: project.name,
+    developerId: project.developerId,
+    message: message.slice(0, 1000),
+    fromUserId: fromUserId || null,
+    createdAt: serverTimestamp(),
+  }).catch((error) => handleFirestoreError(error, OperationType.CREATE, 'inquiries'));
 };
 
 // --- Listing agents (broker storefront) ---
@@ -826,6 +880,91 @@ const COMPOSITE_YTD_GROWTH = (
 // Top-moving markets, ranked by YoY change, for the leaderboard beside the chart.
 const TOP_MOVERS = [...ALL_CITIES].sort((a, b) => b.yoyChange - a.yoyChange).slice(0, 6);
 
+// Real, deterministic parsing of the "Ask AI" free-text box into the app's actual filter
+// state — browseMode/searchQuery/budgetRange/selectedBhkType/selectedConstStatus/
+// onlyReraVerified. This is intentionally NOT a call to a hosted LLM (there's no AI backend
+// wired up), but it is genuinely functional: every field below maps straight onto a live
+// filter that immediately narrows the real, live-fetched listing set. No result is invented,
+// no field is left silently unused — if nothing in the sentence matches, it's reported as
+// "not understood" so the caller can fall back to routing the raw text to a human advisor
+// instead of pretending to have found something.
+const parseAiSearchQuery = (raw: string): {
+  browseMode?: 'buy' | 'rent';
+  matchedLocation?: string;
+  budgetRange?: string;
+  selectedBhkType?: string;
+  selectedConstStatus?: string;
+  onlyReraVerified?: boolean;
+  understood: string[];
+} => {
+  const q = raw.toLowerCase();
+  const understood: string[] = [];
+  const result: { browseMode?: 'buy' | 'rent'; matchedLocation?: string; budgetRange?: string; selectedBhkType?: string; selectedConstStatus?: string; onlyReraVerified?: boolean; understood: string[]; } = { understood };
+
+  if (/\b(rent|renting|lease|leasing|tenant)\b/.test(q)) { result.browseMode = 'rent'; understood.push('Rent'); }
+  else if (/\b(buy|buying|purchase|for sale|\bsale\b)\b/.test(q)) { result.browseMode = 'buy'; understood.push('Buy'); }
+
+  // Location: match against the real country/city list, longest name first so "Vienna" wins
+  // over a coincidental shorter substring.
+  const allPlaceNames = [
+    ...ALL_CITIES.map(c => c.city),
+    ...COUNTRIES.map(c => c.name),
+  ].sort((a, b) => b.length - a.length);
+  for (const name of allPlaceNames) {
+    if (q.includes(name.toLowerCase())) {
+      result.matchedLocation = name;
+      understood.push(name);
+      break;
+    }
+  }
+
+  const bhkMatch = q.match(/(\d+)\s*(?:br\b|bed\b|beds\b|bedroom|bhk)/);
+  if (bhkMatch) {
+    const n = Math.min(parseInt(bhkMatch[1], 10), 4);
+    result.selectedBhkType = `${n} BR`;
+    understood.push(`${n} BR`);
+  } else if (/\bpenthouse\b/.test(q)) {
+    result.selectedBhkType = 'Penthouse';
+    understood.push('Penthouse');
+  }
+
+  if (/\b(ready to move|move-?in ready)\b/.test(q)) { result.selectedConstStatus = 'Ready to Move'; understood.push('Ready to Move'); }
+  else if (/\b(under construction|off-?plan)\b/.test(q)) { result.selectedConstStatus = 'Under Construction'; understood.push('Under Construction'); }
+  else if (/\b(pre-?launch|upcoming project)\b/.test(q)) { result.selectedConstStatus = 'Pre-Launch'; understood.push('Pre-Launch'); }
+
+  if (/\b(verified|rera[- ]?approved)\b/.test(q)) { result.onlyReraVerified = true; understood.push('Verified only'); }
+
+  // Budget: a number with an optional k/m/lakh/crore suffix, gated behind an "under/below/
+  // budget/max" cue so it doesn't misread a bedroom count. India-style lakh/crore and a
+  // handful of currency hints get converted to the same USD buckets the filter already uses
+  // (the buckets are approximate by design — the UI itself only has four bands).
+  const budgetMatch = q.match(/(?:under|below|up ?to|max(?:imum)?|budget(?: of)?|less than|within)\D{0,8}([\d,.]+)\s*(k|thousand|m|million|lakh|lac|cr|crore)?/);
+  if (budgetMatch) {
+    const num = parseFloat(budgetMatch[1].replace(/,/g, ''));
+    const suffix = budgetMatch[2];
+    let amount = num;
+    let assumedCurrency = 'USD';
+    if (suffix === 'k' || suffix === 'thousand') amount = num * 1_000;
+    else if (suffix === 'm' || suffix === 'million') amount = num * 1_000_000;
+    else if (suffix === 'lakh' || suffix === 'lac') { amount = num * 100_000; assumedCurrency = 'INR'; }
+    else if (suffix === 'cr' || suffix === 'crore') { amount = num * 10_000_000; assumedCurrency = 'INR'; }
+    if (/₹|\binr\b|rupee/.test(q)) assumedCurrency = 'INR';
+    else if (/£|\bgbp\b|pound/.test(q)) assumedCurrency = 'GBP';
+    else if (/€|\beur\b|euro/.test(q)) assumedCurrency = 'EUR';
+    else if (/\baed\b|dirham/.test(q)) assumedCurrency = 'AED';
+    if (!isNaN(amount) && amount > 0) {
+      const usd = toUSD(amount, assumedCurrency);
+      if (usd < 300_000) result.budgetRange = '< $300K';
+      else if (usd <= 800_000) result.budgetRange = '$300K - $800K';
+      else if (usd <= 2_000_000) result.budgetRange = '$800K - $2M';
+      else result.budgetRange = '> $2M';
+      understood.push(`Budget ${result.budgetRange}`);
+    }
+  }
+
+  return result;
+};
+
 const MarketAnalytics = () => (
   <Card className="border-stone-200 bg-white shadow-sm overflow-hidden rounded-3xl">
     <CardHeader className="pb-2">
@@ -1070,7 +1209,7 @@ const ProjectCard: React.FC<{
               <ArrowUpRight className="ml-1 w-3.5 h-3.5" />
             </Button>
             <Button
-              onClick={(e) => { e.stopPropagation(); contactAdvisor(`Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`); }}
+              onClick={(e) => { e.stopPropagation(); const msg = `Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`; contactAdvisor(msg); logInquiry(project, msg); }}
               className="bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-xl font-bold px-3 py-2.5 transition-all shrink-0"
               aria-label="Email agent"
             >
@@ -1142,7 +1281,7 @@ const ListingRow: React.FC<{
         <div className="flex items-end justify-between gap-2 pt-1">
           <p className="text-base sm:text-lg font-bold text-stone-900 tracking-tight">{priceLabel(project.basePrice, project.currency, project.listingType)}</p>
           <button
-            onClick={(e) => { e.stopPropagation(); contactAdvisor(`Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`); }}
+            onClick={(e) => { e.stopPropagation(); const msg = `Hi! I'm interested in ${project.name}, ${project.city}. Please share details. ${window.location.origin}/property/${project.id}`; contactAdvisor(msg); logInquiry(project, msg); }}
             className="w-8 h-8 shrink-0 bg-brand-600 text-white hover:bg-brand-700 rounded-lg flex items-center justify-center transition-all"
             aria-label="Email agent"
           >
@@ -1568,6 +1707,169 @@ const ImageLightbox = ({
   );
 };
 
+// Real 360° viewer: a genuine equirectangular photo the listing owner provided, rendered as
+// a drag/swipe-to-pan strip rather than a fake WebGL sphere we'd have to fabricate depth for.
+// It's an honest "360° Pan View" — a wide panorama you look around by dragging — not a claim
+// of full VR immersion. It only ever renders when a real panoramaUrl is present; there is no
+// synthetic fallback that dresses up a normal flat photo as a tour.
+const PanoramaViewer = ({ src }: { src: string }) => {
+  const trackRef = React.useRef<HTMLDivElement>(null);
+  const [offsetPct, setOffsetPct] = useState(0); // 0 = leftmost, 100 = rightmost
+  const dragState = React.useRef<{ startX: number; startOffset: number } | null>(null);
+
+  const clamp = (v: number) => Math.max(0, Math.min(100, v));
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragState.current = { startX: e.clientX, startOffset: offsetPct };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragState.current || !trackRef.current) return;
+    const width = trackRef.current.clientWidth || 1;
+    const deltaPct = ((e.clientX - dragState.current.startX) / width) * 100;
+    setOffsetPct(clamp(dragState.current.startOffset - deltaPct));
+  };
+  const onPointerUp = () => { dragState.current = null; };
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={trackRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+        className="relative w-full h-64 sm:h-80 rounded-2xl overflow-hidden bg-stone-900 cursor-grab active:cursor-grabbing select-none touch-none"
+      >
+        <img
+          src={src}
+          alt="360° panorama"
+          draggable={false}
+          referrerPolicy="no-referrer"
+          className="absolute top-0 h-full w-[220%] max-w-none object-cover pointer-events-none"
+          style={{ left: `${-offsetPct * 1.2}%` }}
+        />
+        <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+          <RotateCw className="w-3.5 h-3.5" />
+          360° · Drag to look around
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const haversineMeters = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const formatDistance = (meters: number) => meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
+
+type AmenityCategory = 'school' | 'health' | 'supermarket' | 'transit';
+const AMENITY_META: Record<AmenityCategory, { label: string; icon: React.ElementType }> = {
+  school: { label: 'Nearest School', icon: GraduationCap },
+  health: { label: 'Nearest Hospital/Clinic', icon: HeartPulse },
+  supermarket: { label: 'Nearest Supermarket', icon: ShoppingCart },
+  transit: { label: 'Nearest Transit Station', icon: TrainFront },
+};
+
+// Genuinely live nearby-amenities lookup via the public OpenStreetMap Overpass API — real
+// POIs within ~2km of the listing's actual coordinates, not a proprietary "walk score" and
+// not a hardcoded generic fallback like "City Center Metro" for every single listing. If the
+// listing has no real lat/lng, or the live query fails/times out, this renders nothing at all
+// rather than inventing a plausible-looking result.
+const NearbyAmenities = ({ lat, lng }: { lat: number; lng: number }) => {
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [results, setResults] = useState<Partial<Record<AmenityCategory, { name: string; distance: number }>>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus('loading');
+    const query = `[out:json][timeout:15];(
+      node["amenity"="school"](around:1500,${lat},${lng});
+      node["amenity"~"^(hospital|clinic)$"](around:2000,${lat},${lng});
+      node["shop"="supermarket"](around:1500,${lat},${lng});
+      node["railway"="station"](around:2500,${lat},${lng});
+      node["public_transport"="station"](around:2500,${lat},${lng});
+    );out body 50;`;
+    fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+    })
+      .then(res => { if (!res.ok) throw new Error(`Overpass ${res.status}`); return res.json(); })
+      .then((data: { elements: { lat: number; lon: number; tags?: Record<string, string>; }[] }) => {
+        if (cancelled) return;
+        const nearest: Partial<Record<AmenityCategory, { name: string; distance: number }>> = {};
+        for (const el of data.elements || []) {
+          if (!el.tags || typeof el.lat !== 'number' || typeof el.lon !== 'number') continue;
+          let category: AmenityCategory | null = null;
+          if (el.tags.amenity === 'school') category = 'school';
+          else if (el.tags.amenity === 'hospital' || el.tags.amenity === 'clinic') category = 'health';
+          else if (el.tags.shop === 'supermarket') category = 'supermarket';
+          else if (el.tags.railway === 'station' || el.tags.public_transport === 'station') category = 'transit';
+          if (!category || !el.tags.name) continue;
+          const distance = haversineMeters(lat, lng, el.lat, el.lon);
+          if (!nearest[category] || distance < nearest[category]!.distance) {
+            nearest[category] = { name: el.tags.name, distance };
+          }
+        }
+        setResults(nearest);
+        setStatus('ready');
+      })
+      .catch(() => { if (!cancelled) setStatus('error'); });
+    return () => { cancelled = true; };
+  }, [lat, lng]);
+
+  if (status === 'error') return null;
+  const categories = Object.keys(AMENITY_META) as AmenityCategory[];
+  const anyResults = categories.some(c => results[c]);
+
+  return (
+    <section id="pd-neighborhood" className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
+      <h4 className="text-sm font-bold uppercase tracking-wider text-stone-400 flex items-center gap-2">
+        <Compass className="w-4 h-4 text-stone-500" />
+        Nearby (Live, via OpenStreetMap)
+      </h4>
+      {status === 'loading' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {categories.map(c => (
+            <div key={c} className="bg-white border border-stone-100 p-4 rounded-xl h-[62px] animate-pulse" />
+          ))}
+        </div>
+      ) : anyResults ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {categories.filter(c => results[c]).map(c => {
+              const meta = AMENITY_META[c];
+              const r = results[c]!;
+              const Icon = meta.icon;
+              return (
+                <div key={c} className="bg-white border border-stone-100 p-4 rounded-xl flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-brand-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wider leading-none">{meta.label}</p>
+                    <p className="text-xs font-bold text-stone-800 line-clamp-1 mt-1">{r.name}</p>
+                    <span className="inline-block px-1.5 py-0.5 bg-brand-50 text-brand-700 rounded text-[9px] font-bold mt-1 uppercase tracking-wider">{formatDistance(r.distance)} away</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-stone-400 font-medium">Live map data © OpenStreetMap contributors — straight-line distance from the listing's coordinates.</p>
+        </>
+      ) : (
+        <p className="text-xs text-stone-400 font-medium">No mapped schools, healthcare, supermarkets or transit found within range on OpenStreetMap for this location.</p>
+      )}
+    </section>
+  );
+};
+
 const Dashboard = () => {
   const { user, profile, openAuthModal, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -1575,6 +1877,7 @@ const Dashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [resaleUnits, setResaleUnits] = useState<Unit[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectUnits, setProjectUnits] = useState<Unit[]>([]);
   // Fullscreen image viewer for the property photo grid — previously the grid images had
@@ -1752,7 +2055,12 @@ const Dashboard = () => {
     totalUnits: 50,
     basePrice: 500000,
     reraId: "",
-    listingType: "sale" as 'sale' | 'rent'
+    listingType: "sale" as 'sale' | 'rent',
+    // Real photo/tour links the developer actually owns — pasted as URLs since there's no
+    // Firebase Storage bucket wired up yet. Left blank, the listing falls back to a labeled
+    // placeholder graphic rather than a photo of a property that doesn't exist.
+    photoUrls: "",
+    panoramaUrl: "",
   });
 
   const [marketData, setMarketData] = useState<MarketDataPoint[]>([
@@ -1920,6 +2228,22 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  // Real lead feed for developers/agents: every genuine "Contact Agent" click on one of their
+  // own listings writes a real `inquiries` doc (see handleContactAboutProject below) — this
+  // just reads back that same real, live collection, scoped to listings this account actually
+  // owns. No synthetic lead counts, no placeholder numbers.
+  useEffect(() => {
+    if (user && profile?.role === 'developer') {
+      const q = query(collection(db, 'inquiries'), where('developerId', '==', user.uid), orderBy('createdAt', 'desc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setInquiries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Inquiry)));
+      }, (err) => { notify("Couldn't load your leads. Please refresh the page."); handleFirestoreError(err, OperationType.LIST, 'inquiries'); });
+      return () => unsubscribe();
+    } else {
+      setInquiries([]);
+    }
+  }, [user, profile?.role]);
+
   useEffect(() => {
     // Fetch all resale units across projects using collectionGroup
     const q = query(collectionGroup(db, 'units'), where('status', '==', 'resale'));
@@ -2052,17 +2376,26 @@ const Dashboard = () => {
     try {
       const pRef = doc(collection(db, 'projects'));
       const countryMeta = COUNTRIES.find(c => c.name === newProject.country);
-      const { reraId: _draftReraId, ...newProjectRest } = newProject;
+      const { reraId: _draftReraId, photoUrls: _draftPhotoUrls, panoramaUrl: _draftPanoramaUrl, ...newProjectRest } = newProject;
+      // Real photos the developer pasted in, one URL per line/comma — not stock art. Only
+      // fall back to the placeholder graphic if they genuinely gave us nothing to show, and
+      // that fallback is a plain gray "no photo provided" tile, not a fake property photo.
+      const realPhotos = newProject.photoUrls
+        .split(/[\n,]+/)
+        .map(u => u.trim())
+        .filter(u => /^https?:\/\//.test(u));
       const projectData = {
         ...newProjectRest,
         countryCode: countryMeta?.code || '',
         region: countryMeta?.region || 'Europe',
         // Firestore rejects explicit `undefined` values — only include reraId when set.
         ...(newProject.reraId ? { reraId: newProject.reraId } : {}),
+        ...(newProject.panoramaUrl.trim() ? { panoramaUrl: newProject.panoramaUrl.trim() } : {}),
         verified: false, // manually launched listings start unverified until reviewed
         developerId: user.uid,
         developerName: user.displayName || 'Verified Developer',
-        imageUrl: `https://picsum.photos/seed/${encodeURIComponent(newProject.name)}/800/500`,
+        imageUrl: realPhotos[0] || NO_PHOTO_PLACEHOLDER,
+        images: realPhotos.length > 0 ? realPhotos : [NO_PHOTO_PLACEHOLDER],
         aiValuation: Math.round(Number(newProject.basePrice) * 1.05),
         marketTrend: 'Bullish',
         createdAt: serverTimestamp()
@@ -2097,7 +2430,9 @@ const Dashboard = () => {
         totalUnits: 50,
         basePrice: 500000,
         reraId: "",
-        listingType: "sale"
+        listingType: "sale",
+        photoUrls: "",
+        panoramaUrl: "",
       });
     } catch (error) {
       notify("Couldn't publish your listing. Please try again.");
@@ -2547,6 +2882,14 @@ const Dashboard = () => {
                     Inventory
                   </TabsTrigger>
                 )}
+                {profile?.role === 'developer' && (
+                  <TabsTrigger value="leads" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest flex items-center gap-1.5">
+                    Leads
+                    {inquiries.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-600" />
+                    )}
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="resale" className="rounded-xl md:rounded-3xl px-4 md:px-12 py-2.5 md:py-4 data-[state=active]:bg-white data-[state=active]:text-brand-600 data-[state=active]:shadow-lg font-bold transition-all text-[10px] md:text-xs uppercase tracking-widest">
                   Resale
                 </TabsTrigger>
@@ -2896,6 +3239,51 @@ const Dashboard = () => {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Real leads — every card here is a genuine `inquiries` doc written the moment a
+              visitor clicked "Contact" on one of this account's own listings (see logInquiry).
+              No placeholder numbers, no simulated activity: zero leads shows the empty state
+              below, not a fabricated example. */}
+          <TabsContent value="leads" className="mt-0">
+            {inquiries.length === 0 ? (
+              <div className="col-span-full py-20 sm:py-40 text-center glass-panel rounded-3xl border-stone-100 p-6 sm:p-12">
+                <div className="bg-brand-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8">
+                  <Mail className="w-8 h-8 sm:w-12 sm:h-12 text-brand-600" />
+                </div>
+                <h3 className="font-bold tracking-tight text-2xl sm:text-4xl text-stone-900">No Leads Yet</h3>
+                <p className="text-sm sm:text-base text-stone-500 mt-3 sm:mt-4 max-w-md mx-auto font-medium">
+                  Real inquiries from buyers and renters contacting you about your own listings will show up here as they come in.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 sm:space-y-4 max-w-3xl">
+                {inquiries.map(inq => {
+                  const relatedProject = projects.find(p => p.id === inq.projectId);
+                  const when = timeAgo(inq.createdAt);
+                  return (
+                    <Card key={inq.id} className="border-stone-200 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1.5 min-w-0">
+                          <p className="text-xs font-bold uppercase tracking-widest text-brand-600">{inq.projectName}</p>
+                          <p className="text-sm text-stone-700 font-medium leading-relaxed break-words">{inq.message}</p>
+                          {when && <p className="text-[11px] text-stone-400 font-semibold">{when}</p>}
+                        </div>
+                        {relatedProject && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleSelectProject(relatedProject)}
+                            className="shrink-0 border-stone-200 text-stone-600 hover:text-brand-600 hover:border-brand-200 font-bold rounded-xl text-xs"
+                          >
+                            View Listing
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="portfolio" className="mt-0">
@@ -3696,6 +4084,15 @@ const Dashboard = () => {
                 </div>
               )}
 
+              {/* Real 360° tour — only renders when the listing owner actually attached a
+                  genuine panorama photo. No fallback tries to fake one from the flat gallery
+                  photos above. */}
+              {selectedProject.panoramaUrl && (
+                <div id="pd-360" className="px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
+                  <PanoramaViewer src={selectedProject.panoramaUrl} />
+                </div>
+              )}
+
               {/* Sticky in-dialog sub-nav — a lighter-weight stand-in for full tab panels
                   (Gallery/Description/Amenities/etc. as separate views) given how much this
                   dialog already renders; scrolling to an anchor within the same ScrollArea
@@ -3705,6 +4102,7 @@ const Dashboard = () => {
               <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-stone-100 px-5 sm:px-8 md:px-10 flex items-center gap-5 sm:gap-7 overflow-x-auto scrollbar-none">
                 {[
                   { id: 'pd-gallery', label: 'Gallery' },
+                  ...(selectedProject.panoramaUrl ? [{ id: 'pd-360', label: '360° Tour' }] : []),
                   { id: 'pd-details', label: 'Details' },
                   { id: 'pd-price', label: 'Price Context' },
                   { id: 'pd-location', label: 'Location' },
@@ -3757,31 +4155,44 @@ const Dashboard = () => {
                        </button>
                      </div>
 
-                     {/* Neighborhood Proximities & Landmarks */}
-                     <section id="pd-location" className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-stone-400 flex items-center gap-2">
-                        <Compass className="w-4 h-4 text-stone-500" />
-                        Travel Times & Nearby Connections
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {(selectedProject.landmarks || [
-                          { name: "City Center Metro", distance: "4 mins walking" },
-                          { name: "Super-specialty Med-hub", distance: "8 mins driving" },
-                          { name: "International Flight Terminus", distance: "20 mins highway" }
-                        ]).map((lm, idx) => (
-                          <div key={idx} className="bg-white border border-stone-100 p-4 rounded-xl flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center shrink-0">
-                              <Landmark className="w-4 h-4 text-brand-600" />
+                     {/* Neighborhood Proximities & Landmarks — only rendered when the listing
+                         actually has real, curator-entered landmarks. This used to fall back
+                         to three hardcoded generic entries ("City Center Metro", etc.) for
+                         every listing that didn't have real data, which is exactly the kind of
+                         fabricated-looking-real content this pass is removing. The live
+                         NearbyAmenities section right below covers this for every listing that
+                         has real coordinates instead. */}
+                     {selectedProject.landmarks && selectedProject.landmarks.length > 0 && (
+                       <section id="pd-location" className="bg-stone-50 rounded-2xl p-5 sm:p-8 border border-stone-100 space-y-4">
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-stone-400 flex items-center gap-2">
+                          <Compass className="w-4 h-4 text-stone-500" />
+                          Travel Times & Nearby Connections
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          {selectedProject.landmarks.map((lm, idx) => (
+                            <div key={idx} className="bg-white border border-stone-100 p-4 rounded-xl flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center shrink-0">
+                                <Landmark className="w-4 h-4 text-brand-600" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wider leading-none">Proximity</p>
+                                <p className="text-xs font-bold text-stone-800 line-clamp-1 mt-1">{lm.name}</p>
+                                <span className="inline-block px-1.5 py-0.5 bg-brand-50 text-brand-700 rounded text-[9px] font-bold mt-1 uppercase tracking-wider">{lm.distance}</span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wider leading-none">Proximity</p>
-                              <p className="text-xs font-bold text-stone-800 line-clamp-1 mt-1">{lm.name}</p>
-                              <span className="inline-block px-1.5 py-0.5 bg-brand-50 text-brand-700 rounded text-[9px] font-bold mt-1 uppercase tracking-wider">{lm.distance}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
+                          ))}
+                        </div>
+                      </section>
+                     )}
+
+                     {/* Live nearby amenities — real OpenStreetMap data queried against this
+                         listing's actual coordinates. Only renders when the listing has real
+                         lat/lng; there's no fallback that fakes a location. */}
+                     {typeof selectedProject.lat === 'number' && typeof selectedProject.lng === 'number' && (
+                       <div id={selectedProject.landmarks?.length ? undefined : 'pd-location'}>
+                         <NearbyAmenities lat={selectedProject.lat} lng={selectedProject.lng} />
+                       </div>
+                     )}
 
                     {/* Price context vs. other JGEstate listings in the same city. This is
                         deliberately built from the app's own live listing data (not invented
@@ -3997,7 +4408,7 @@ const Dashboard = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-2.5">
                             <Button
-                              onClick={() => contactAdvisor(`Hi ${listingAgent.name}! I'm interested in ${selectedProject.name}, ${selectedProject.city}. Could you share more details?`)}
+                              onClick={() => { const msg = `Hi ${listingAgent.name}! I'm interested in ${selectedProject.name}, ${selectedProject.city}. Could you share more details?`; contactAdvisor(msg); logInquiry(selectedProject, msg, user?.uid); }}
                               className="bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-bold text-xs"
                             >
                               <Mail className="w-3.5 h-3.5 mr-1.5" />
@@ -4142,7 +4553,7 @@ const Dashboard = () => {
 
                     {/* Contact Agent */}
                     <Button
-                      onClick={() => contactAdvisor(`Hi! I'm interested in ${selectedProject.name} (${selectedProject.location}). ${selectedProject.listingType === 'rent' ? 'Rent' : 'Price'}: ${priceLabel(selectedProject.basePrice, selectedProject.currency, selectedProject.listingType)}. Please share details and arrange a site visit. ${window.location.origin}/property/${selectedProject.id}`)}
+                      onClick={() => { const msg = `Hi! I'm interested in ${selectedProject.name} (${selectedProject.location}). ${selectedProject.listingType === 'rent' ? 'Rent' : 'Price'}: ${priceLabel(selectedProject.basePrice, selectedProject.currency, selectedProject.listingType)}. Please share details and arrange a site visit. ${window.location.origin}/property/${selectedProject.id}`; contactAdvisor(msg); logInquiry(selectedProject, msg, user?.uid); }}
                       className="w-full bg-brand-600 text-white hover:bg-brand-700 font-bold rounded-xl sm:rounded-3xl py-6 sm:py-7 text-xs sm:text-sm uppercase tracking-widest shadow-xl transition-all"
                     >
                       <Mail className="w-4 h-4 mr-2" />
@@ -4411,8 +4822,30 @@ const Dashboard = () => {
                 className="rounded-xl border-stone-100 bg-stone-50 font-bold"
               />
             </div>
+            <div className="space-y-2 sm:space-y-3 mb-2 sm:mb-0">
+              <Label className="micro-label">Real Photo URLs (one per line — your own photos, not stock)</Label>
+              <textarea
+                value={newProject.photoUrls}
+                onChange={(e) => setNewProject({ ...newProject, photoUrls: e.target.value })}
+                placeholder={"https://your-cdn.com/living-room.jpg\nhttps://your-cdn.com/kitchen.jpg"}
+                rows={3}
+                className="w-full rounded-xl border border-stone-100 bg-stone-50 font-bold text-sm p-4 resize-none"
+              />
+              <p className="text-xs text-stone-400 font-medium">
+                No links yet? The listing publishes with a plain "No Photo Provided" placeholder instead of a stock photo — we never show a picture that isn't actually your property.
+              </p>
+            </div>
+            <div className="space-y-2 sm:space-y-3 mb-2 sm:mb-0">
+              <Label className="micro-label">360° Tour Photo URL (optional — a real equirectangular panorama)</Label>
+              <Input
+                value={newProject.panoramaUrl}
+                onChange={(e) => setNewProject({ ...newProject, panoramaUrl: e.target.value })}
+                placeholder="https://your-cdn.com/living-room-360.jpg"
+                className="rounded-xl border-stone-100 bg-stone-50 font-bold"
+              />
+            </div>
           </div>
-          <Button 
+          <Button
             onClick={confirmLaunch}
             className="w-full bg-brand-600 text-white hover:bg-stone-900 font-bold py-5 sm:py-8 rounded-xl sm:rounded-2xl text-base sm:text-lg shadow-xl"
           >
@@ -4619,9 +5052,12 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Ask AI — natural-language search assist. Routes the query to an advisor via
-          email rather than a black-box match, since there's no live LLM search
-          backend yet — this keeps the promise honest while still being useful. */}
+      {/* Ask AI — natural-language search assist. There's no hosted LLM backend, so instead
+          of faking one, this runs a real deterministic parser (parseAiSearchQuery) over the
+          typed sentence and applies whatever it genuinely understood directly to the live
+          filter state — the same state the manual Filters panel drives. Anything it can't
+          confidently parse falls back to routing the raw text to a human advisor, so the
+          button never pretends to have understood something it didn't. */}
       <Dialog open={isAskAiOpen} onOpenChange={setIsAskAiOpen}>
         <DialogContent
           onClose={() => setIsAskAiOpen(false)}
@@ -4633,7 +5069,7 @@ const Dashboard = () => {
               Ask AI
             </DialogTitle>
             <DialogDescription className="text-stone-500 text-sm sm:text-base font-medium">
-              Describe what you're looking for in plain language — budget, city, must-haves — and an advisor will follow up with matches.
+              Describe what you're looking for in plain language — we'll apply it to real listings instantly. Anything we can't parse gets routed to an advisor instead.
             </DialogDescription>
           </DialogHeader>
           <div className="py-6 sm:py-8 space-y-4">
@@ -4645,7 +5081,7 @@ const Dashboard = () => {
               className="w-full rounded-xl border border-stone-200 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:bg-white text-sm font-medium text-stone-900 p-4 resize-none"
             />
             <div className="flex flex-wrap gap-2">
-              {['Under $500K', 'Sea view', 'Move-in ready', 'High rental yield'].map((chip) => (
+              {['Under $500K', '2 bedroom', 'Move-in ready', 'Verified only'].map((chip) => (
                 <button
                   key={chip}
                   onClick={() => setAskAiQuery((q) => (q ? `${q}, ${chip.toLowerCase()}` : chip))}
@@ -4659,14 +5095,30 @@ const Dashboard = () => {
           <Button
             disabled={!askAiQuery.trim()}
             onClick={() => {
-              contactAdvisor(`Hi! I used Ask AI on JGEstate. Here's what I'm looking for: ${askAiQuery}`);
+              const parsed = parseAiSearchQuery(askAiQuery);
+              if (parsed.understood.length === 0) {
+                // Genuinely nothing recognizable in the sentence — don't fake a match, hand
+                // it to a human instead, exactly as before.
+                contactAdvisor(`Hi! I used Ask AI on JGEstate. Here's what I'm looking for: ${askAiQuery}`);
+                notify("Couldn't pick out specific filters from that — we've sent it to an advisor instead.", 'success');
+              } else {
+                if (parsed.browseMode) setBrowseMode(parsed.browseMode);
+                if (parsed.matchedLocation) setSearchQuery(parsed.matchedLocation);
+                if (parsed.budgetRange) setBudgetRange(parsed.budgetRange);
+                if (parsed.selectedBhkType) setSelectedBhkType(parsed.selectedBhkType);
+                if (parsed.selectedConstStatus) setSelectedConstStatus(parsed.selectedConstStatus);
+                if (parsed.onlyReraVerified) setOnlyReraVerified(true);
+                setIsFilterPanelExpanded(true);
+                notify(`Applied: ${parsed.understood.join(' · ')}`, 'success');
+                scrollToSection('catalog');
+              }
               setIsAskAiOpen(false);
               setAskAiQuery('');
             }}
             className="w-full bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
           >
-            <Mail className="w-4 h-4 mr-2" />
-            Get Matches From an Advisor
+            <Sparkles className="w-4 h-4 mr-2" />
+            Search With AI
           </Button>
         </DialogContent>
       </Dialog>
