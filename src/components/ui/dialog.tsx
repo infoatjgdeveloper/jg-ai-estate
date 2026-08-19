@@ -3,19 +3,39 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
-function Dialog({ open, onOpenChange, children, ...props }: { 
-  open?: boolean; 
+function Dialog({ open, onOpenChange, children, ...props }: {
+  open?: boolean;
   onOpenChange?: (open: boolean) => void;
   children?: React.ReactNode;
 }) {
+  // ESC-to-close: this is a bespoke overlay (not Radix), so nothing handled this before —
+  // every dialog in the app was only closable via its own X button.
+  React.useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onOpenChange?.(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onOpenChange]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={() => onOpenChange?.(false)}
       />
-      <div className="relative z-50 w-full flex items-center justify-center animate-in fade-in zoom-in-95 duration-200">
+      {/* This wrapper is `w-full` so the dialog content can center itself, but that also
+          makes it a full-width box sitting on top of the backdrop above — clicking in the
+          "empty" margin beside a narrower dialog was hitting this div instead of the
+          backdrop, so outside-click silently did nothing. Checking target === currentTarget
+          means it only closes when the click lands on this wrapper itself, not on the
+          dialog content nested inside it. */}
+      <div
+        className="relative z-50 w-full flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => { if (e.target === e.currentTarget) onOpenChange?.(false); }}
+      >
         {children}
       </div>
     </div>

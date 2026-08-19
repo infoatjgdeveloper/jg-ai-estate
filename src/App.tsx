@@ -38,6 +38,7 @@ import {
   LogOut, 
   User as UserIcon,
   ChevronRight,
+  ChevronLeft,
   MapPin,
   Clock,
   DollarSign,
@@ -270,7 +271,7 @@ const SUPPORT_EMAIL = 'infoatjgdeveloper@gmail.com';
 
 // Opens the user's mail client with a prefilled inquiry — the single "contact an
 // advisor" path used across the app (replaces the previous WhatsApp deep-links).
-const contactAdvisor = (message: string, subject = 'JG Estate Inquiry') => {
+const contactAdvisor = (message: string, subject = 'JGEstate Inquiry') => {
   window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
 };
 
@@ -390,7 +391,7 @@ interface ChatMessage {
   text: string;
 }
 
-const AI_CHAT_WELCOME = "Hi, I'm the JG Estate assistant. Ask me how verification works, what it costs to list, which markets we cover, or anything about buying, renting or listing — and I can loop in a human advisor any time.";
+const AI_CHAT_WELCOME = "Hi, I'm the JGEstate assistant. Ask me how verification works, what it costs to list, which markets we cover, or anything about buying, renting or listing — and I can loop in a human advisor any time.";
 
 const getAssistantReply = (raw: string): string => {
   const q = raw.toLowerCase();
@@ -454,7 +455,7 @@ const FloatingAIChat = () => {
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white leading-tight">JG Estate Assistant</p>
+                <p className="text-sm font-bold text-white leading-tight">JGEstate Assistant</p>
                 <p className="text-[10px] font-semibold text-emerald-400 leading-tight">● Online</p>
               </div>
             </div>
@@ -492,7 +493,7 @@ const FloatingAIChat = () => {
           </div>
           <div className="p-3 border-t border-stone-200 shrink-0 space-y-2">
             <button
-              onClick={() => contactAdvisor('Hi! I was chatting with the JG Estate AI assistant and would like to speak with a human advisor.')}
+              onClick={() => contactAdvisor('Hi! I was chatting with the JGEstate AI assistant and would like to speak with a human advisor.')}
               className="w-full flex items-center justify-center gap-2 text-xs font-bold text-brand-600 hover:text-brand-700 py-1.5"
             >
               <Mail className="w-3.5 h-3.5" />
@@ -641,16 +642,22 @@ const Navbar = ({
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 shadow-sm">
       {/* Row 1: live market ticker — deep navy gradient tied to the brand blue (not neutral black),
-          plus a pulsing LIVE dot so it reads as our own live-data strip. */}
-      <div className="w-full bg-gradient-to-r from-brand-950 via-stone-900 to-brand-950 py-1.5 overflow-hidden">
-        <div className="flex items-center gap-16 animate-marquee whitespace-nowrap">
-          <div className="flex items-center gap-1.5 pl-4 shrink-0">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
-            </span>
-            <span className="text-[11px] font-mono font-bold tracking-widest text-emerald-300">LIVE</span>
-          </div>
+          plus a pulsing LIVE dot so it reads as our own live-data strip.
+          The LIVE badge is fixed OUTSIDE the animated track: the marquee loop works by
+          shifting the track exactly -50%, which only looks seamless if both halves of the
+          track are pixel-identical. Putting the LIVE badge inside just the first half (as
+          before) made the two halves different widths, so the loop visibly jumped/gapped
+          once per cycle. Keeping the track to nothing but the duplicated TICKERS list fixes
+          that; LIVE becomes a static, non-scrolling label instead. */}
+      <div className="w-full bg-gradient-to-r from-brand-950 via-stone-900 to-brand-950 py-1.5 overflow-hidden flex items-center">
+        <div className="flex items-center gap-1.5 pl-4 pr-4 shrink-0 z-10">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
+          </span>
+          <span className="text-[11px] font-mono font-bold tracking-widest text-emerald-300">LIVE</span>
+        </div>
+        <div className="flex items-center gap-16 animate-marquee whitespace-nowrap overflow-hidden">
           {TICKERS.map((ticker, i) => <TickerItem key={i} ticker={ticker} />)}
           {TICKERS.map((ticker, i) => <TickerItem key={`dup-${i}`} ticker={ticker} />)}
         </div>
@@ -681,7 +688,7 @@ const Navbar = ({
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6 md:gap-10">
             {/* TODO: swap this monogram badge for the provided logo image, e.g.
-                <img src="/logo.svg" className="h-8 md:h-10 w-auto" alt="JG Estate" /> */}
+                <img src="/logo.svg" className="h-8 md:h-10 w-auto" alt="JGEstate" /> */}
             <div className="flex items-center gap-2.5 cursor-pointer shrink-0" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <span className="flex items-center justify-center h-8 w-8 md:h-9 md:w-9 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white text-sm md:text-base font-extrabold shadow-sm">JG</span>
               <span className="text-lg md:text-2xl font-extrabold text-stone-900 tracking-tight">Estate</span>
@@ -1383,6 +1390,85 @@ const MarketDashboard: React.FC<{ onSelectCountry: (name: string) => void }> = (
   );
 };
 
+// Fullscreen photo viewer for a property's image set. Handles its own keyboard nav
+// (arrows to move, Esc to close) and wraps around at the ends rather than dead-ending,
+// since a "next" button that just stops feels broken on a short set of photos.
+const ImageLightbox = ({
+  images,
+  index,
+  onClose,
+  onIndexChange,
+}: {
+  images: string[];
+  index: number;
+  onClose: () => void;
+  onIndexChange: (i: number) => void;
+}) => {
+  const goPrev = React.useCallback(() => onIndexChange((index - 1 + images.length) % images.length), [index, images.length, onIndexChange]);
+  const goNext = React.useCallback(() => onIndexChange((index + 1) % images.length), [index, images.length, onIndexChange]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'ArrowRight') goNext();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose, goPrev, goNext]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-stone-950/95 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 text-white/70 text-sm font-bold font-mono tracking-widest">
+        {index + 1} / {images.length}
+      </div>
+
+      {images.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goPrev(); }}
+          aria-label="Previous photo"
+          className="absolute left-2 sm:left-6 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+        >
+          <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
+        </button>
+      )}
+
+      <img
+        key={index}
+        src={images[index]}
+        alt={`Photo ${index + 1} of ${images.length}`}
+        className="max-w-full max-h-full object-contain rounded-lg select-none"
+        referrerPolicy="no-referrer"
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {images.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goNext(); }}
+          aria-label="Next photo"
+          className="absolute right-2 sm:right-6 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+        >
+          <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
+        </button>
+      )}
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const { user, profile, openAuthModal, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -1392,6 +1478,10 @@ const Dashboard = () => {
   const [resaleUnits, setResaleUnits] = useState<Unit[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectUnits, setProjectUnits] = useState<Unit[]>([]);
+  // Fullscreen image viewer for the property photo grid — previously the grid images had
+  // no click handler at all, so there was no way to see them larger than the small tiles.
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  useEffect(() => { setLightboxIndex(null); }, [selectedProject?.id]);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [isBiddingOpen, setIsBiddingOpen] = useState(false);
@@ -2071,13 +2161,13 @@ const Dashboard = () => {
   // Per-page <title> — basic SEO/share signal for listing, builder & agent pages.
   useEffect(() => {
     if (selectedProject) {
-      document.title = `${selectedProject.name} — ${selectedProject.city}, ${selectedProject.country} | JG Estate`;
+      document.title = `${selectedProject.name} — ${selectedProject.city}, ${selectedProject.country} | JGEstate`;
     } else if (viewingBuilder) {
-      document.title = `${viewingBuilder} — Builder Portfolio | JG Estate`;
+      document.title = `${viewingBuilder} — Builder Portfolio | JGEstate`;
     } else if (currentShowcaseAgent) {
-      document.title = `${currentShowcaseAgent.name} — Agent Storefront | JG Estate`;
+      document.title = `${currentShowcaseAgent.name} — Agent Storefront | JGEstate`;
     } else {
-      document.title = 'JG Estate — Global Verified Real Estate Marketplace';
+      document.title = 'JGEstate — Global Verified Real Estate Marketplace';
     }
   }, [selectedProject, viewingBuilder, currentShowcaseAgent]);
 
@@ -2113,7 +2203,7 @@ const Dashboard = () => {
         onSellClick={() => (user ? setIsLaunchOpen(true) : openAuthModal('signup'))}
         onEvaluateClick={() => setIsEvaluateOpen(true)}
         onInvestClick={() => scrollToSection('market')}
-        onAdvisorClick={() => contactAdvisor("Hi! I'd like to speak with a JG Estate advisor about buying, selling, or renting a property.")}
+        onAdvisorClick={() => contactAdvisor("Hi! I'd like to speak with a JGEstate advisor about buying, selling, or renting a property.")}
         onEmiClick={() => setIsEmiOpen(true)}
       />
       {/* Hero — full-bleed real-estate photography instead of the old flat white/gradient
@@ -2192,7 +2282,7 @@ const Dashboard = () => {
                     if (mode.key === 'buy' || mode.key === 'rent') {
                       setBrowseMode(mode.key);
                     } else {
-                      contactAdvisor(`Hi! I'm looking for ${mode.label.toLowerCase()} listings on JG Estate — can you help me get started?`);
+                      contactAdvisor(`Hi! I'm looking for ${mode.label.toLowerCase()} listings on JGEstate — can you help me get started?`);
                     }
                   }}
                   className={`px-4 sm:px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
@@ -2254,18 +2344,18 @@ const Dashboard = () => {
         </motion.div>
       </section>
 
-      {/* What is JG Estate — plain-language explanation of the product, placed right after
+      {/* What is JGEstate — plain-language explanation of the product, placed right after
           the hero so a first-time visitor understands what this is before anything else. */}
       <section className="py-20 sm:py-32 px-4 sm:px-8 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <Reveal>
             <div className="space-y-6 sm:space-y-8">
-              <p className="micro-label text-brand-600">What Is JG Estate</p>
+              <p className="micro-label text-brand-600">What Is JGEstate</p>
               <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight leading-tight">
                 One marketplace for every property, in every market you care about.
               </h2>
               <p className="text-sm sm:text-lg text-stone-500 font-medium leading-relaxed">
-                JG Estate connects verified buyers, renters, agents, developers and investors across {COUNTRIES.length} countries — one search, one login, one verification standard, wherever the property sits. No wiring money to a stranger, no guessing whether a listing is even real.
+                JGEstate connects verified buyers, renters, agents, developers and investors across {COUNTRIES.length} countries — one search, one login, one verification standard, wherever the property sits. No wiring money to a stranger, no guessing whether a listing is even real.
               </p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-8 pt-2">
                 {[
@@ -2342,7 +2432,7 @@ const Dashboard = () => {
             <p className="micro-label text-brand-400">One Platform, Every Role</p>
             <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tighter">Built for everyone in real estate</h2>
             <p className="text-sm sm:text-lg text-stone-400 font-medium leading-relaxed">
-              Whether you're buying your first home or managing a global portfolio, JG Estate gives you the tools built for your role.
+              Whether you're buying your first home or managing a global portfolio, JGEstate gives you the tools built for your role.
             </p>
           </Reveal>
           <motion.div
@@ -2501,7 +2591,7 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Why JG Estate — full-bleed architecture photography instead of another flat
+      {/* Why JGEstate — full-bleed architecture photography instead of another flat
           card grid, so the trust/differentiation section reads as a genuine break in the
           page rather than a repeat of the "How It Works" layout above. */}
       <section className="relative py-20 sm:py-32 px-4 sm:px-8 overflow-hidden">
@@ -2516,7 +2606,7 @@ const Dashboard = () => {
         </div>
         <div className="relative max-w-7xl mx-auto space-y-10 sm:space-y-14">
           <Reveal className="max-w-2xl space-y-3 sm:space-y-4">
-            <p className="micro-label text-brand-400">Why JG Estate</p>
+            <p className="micro-label text-brand-400">Why JGEstate</p>
             <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-white tracking-tight">Built for cross-border buyers, not just browsers</h2>
           </Reveal>
           <motion.div
@@ -2588,7 +2678,7 @@ const Dashboard = () => {
                   ))}
                 </ul>
                 <Button
-                  onClick={() => (plan.name === 'Enterprise' ? contactAdvisor("Hi! I'd like to talk about an Enterprise / builder plan on JG Estate.") : (user ? setIsLaunchOpen(true) : openAuthModal('signup')))}
+                  onClick={() => (plan.name === 'Enterprise' ? contactAdvisor("Hi! I'd like to talk about an Enterprise / builder plan on JGEstate.") : (user ? setIsLaunchOpen(true) : openAuthModal('signup')))}
                   className={`w-full font-bold rounded-xl py-5 sm:py-6 ${plan.highlight ? 'bg-white text-stone-900 hover:bg-brand-50' : 'bg-stone-900 text-white hover:bg-brand-600'}`}
                 >
                   {plan.cta}
@@ -2643,7 +2733,7 @@ const Dashboard = () => {
               <h2 className="font-serif text-3xl sm:text-5xl font-semibold text-stone-900 tracking-tight">Stay ahead of the market</h2>
             </div>
             <button
-              onClick={() => contactAdvisor("Hi! I'd like to get real estate market updates and buying guides from JG Estate.")}
+              onClick={() => contactAdvisor("Hi! I'd like to get real estate market updates and buying guides from JGEstate.")}
               className="text-sm font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1.5 shrink-0"
             >
               Get Updates <ArrowRight className="w-3.5 h-3.5" />
@@ -3209,22 +3299,36 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Asymmetric photo grid gallery (Zillow/ImmoScout24 style) */}
+              {/* Asymmetric photo grid gallery (Zillow/ImmoScout24 style) — every tile opens
+                  the fullscreen lightbox below at the matching image index. */}
               {selectedProject.images && selectedProject.images.length > 1 && (
                 <div className="shrink-0 px-5 sm:px-8 md:px-10 pt-5 sm:pt-6">
                   <div className="grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 h-[160px] sm:h-[220px] rounded-2xl overflow-hidden">
-                    <div className="col-span-2 row-span-2 relative">
+                    <button
+                      type="button"
+                      onClick={() => setLightboxIndex(0)}
+                      className="col-span-2 row-span-2 relative group cursor-zoom-in"
+                      aria-label="View photo 1 fullscreen"
+                    >
                       <img src={selectedProject.images[0]} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
+                      <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/20 transition-colors" />
+                    </button>
                     {selectedProject.images.slice(1, 5).map((img, idx) => (
-                      <div key={idx} className="relative">
+                      <button
+                        type="button"
+                        key={idx}
+                        onClick={() => setLightboxIndex(idx + 1)}
+                        className="relative group cursor-zoom-in"
+                        aria-label={`View photo ${idx + 2} fullscreen`}
+                      >
                         <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/20 transition-colors" />
                         {idx === 3 && selectedProject.images!.length > 5 && (
                           <div className="absolute inset-0 bg-stone-900/60 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                             +{selectedProject.images!.length - 5} more
                           </div>
                         )}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -3619,6 +3723,18 @@ const Dashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Fullscreen image lightbox for the property photo grid above — click any tile to
+          open, arrow keys or the on-screen chevrons to move between photos, Esc/X/backdrop
+          click to close. This sits above the property dialog (z-[100] > the dialog's z-50). */}
+      {lightboxIndex !== null && selectedProject?.images && (
+        <ImageLightbox
+          images={selectedProject.images}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
+      )}
 
       {/* Booking Dialog */}
       <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
@@ -4043,7 +4159,7 @@ const Dashboard = () => {
             })()}
           </div>
           <Button
-            onClick={() => contactAdvisor(`Hi! I used the EMI calculator on JG Estate (price ${formatPriceFull(emiForm.price, emiForm.currency)}, ${emiForm.downPaymentPct}% down, ${emiForm.rate}% rate, ${emiForm.years} years) and I'd like to talk to a financing partner.`)}
+            onClick={() => contactAdvisor(`Hi! I used the EMI calculator on JGEstate (price ${formatPriceFull(emiForm.price, emiForm.currency)}, ${emiForm.downPaymentPct}% down, ${emiForm.rate}% rate, ${emiForm.years} years) and I'd like to talk to a financing partner.`)}
             className="w-full bg-brand-600 text-white hover:bg-brand-700 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
           >
             <Mail className="w-4 h-4 mr-2" />
@@ -4092,7 +4208,7 @@ const Dashboard = () => {
           <Button
             disabled={!askAiQuery.trim()}
             onClick={() => {
-              contactAdvisor(`Hi! I used Ask AI on JG Estate. Here's what I'm looking for: ${askAiQuery}`);
+              contactAdvisor(`Hi! I used Ask AI on JGEstate. Here's what I'm looking for: ${askAiQuery}`);
               setIsAskAiOpen(false);
               setAskAiQuery('');
             }}
@@ -4252,7 +4368,7 @@ const Dashboard = () => {
         <DialogContent className="max-w-lg sm:rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl font-serif">
-              {infoModal === 'about' && 'About JG Estate'}
+              {infoModal === 'about' && 'About JGEstate'}
               {infoModal === 'careers' && 'Careers'}
               {infoModal === 'contact' && 'Contact Us'}
               {infoModal === 'terms' && 'Terms of Use'}
@@ -4263,12 +4379,15 @@ const Dashboard = () => {
           <div className="py-4 sm:py-6 space-y-4 text-sm text-stone-600 leading-relaxed max-h-[60vh] overflow-y-auto">
             {infoModal === 'about' && (
               <>
-                <p>JG Estate is a global real estate marketplace where buyers, renters, agents, developers, and investors can browse and transact on verified property listings across {COUNTRIES.length} countries, priced in local currency with live market data.</p>
+                <p>JGEstate is a global real estate marketplace where buyers, renters, agents, developers, and investors can browse and transact on verified property listings across {COUNTRIES.length} countries, priced in local currency with live market data.</p>
                 <p>Every listing is tied to a real developer or agent, and construction status, RERA/registry references, and pricing are shown as reported by the listing party. Actual payments, escrow, and closing are always handled by licensed third-party providers in the property's jurisdiction — never by this platform directly.</p>
+                <p>JGEstate is a SaaS product built and operated by JGAI, the registered company behind it. Learn more at{' '}
+                  <a href="https://www.jgdeveloper.com" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-600 hover:underline">jgdeveloper.com</a>.
+                </p>
               </>
             )}
             {infoModal === 'careers' && (
-              <p>We don't have open roles listed on the platform yet. If you're interested in working with JG Estate, reach out at{' '}
+              <p>We don't have open roles listed on the platform yet. If you're interested in working with JGEstate, reach out at{' '}
                 <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold text-brand-600 hover:underline">{SUPPORT_EMAIL}</a> and we'll follow up as opportunities open.
               </p>
             )}
@@ -4281,7 +4400,7 @@ const Dashboard = () => {
             )}
             {infoModal === 'terms' && (
               <>
-                <p>By using JG Estate you agree to use the platform only to browse, list, or express genuine interest in real property. Listing accuracy is the responsibility of the developer or agent who submitted it — JG Estate reviews but does not independently guarantee every detail.</p>
+                <p>By using JGEstate you agree to use the platform only to browse, list, or express genuine interest in real property. Listing accuracy is the responsibility of the developer or agent who submitted it — JGEstate reviews but does not independently guarantee every detail.</p>
                 <p>Reservation deposits and other on-platform actions record your interest; they are not a substitute for a formal sale agreement, and all binding contracts, payments, and closings must go through a licensed notary, attorney, or payment processor in the relevant jurisdiction.</p>
               </>
             )}
@@ -4293,8 +4412,8 @@ const Dashboard = () => {
             )}
             {infoModal === 'disclaimer' && (
               <>
-                <p>Listings on JG Estate are shown as reported by developers and agents and may change without notice. Prices, availability, construction status, and rental yields are estimates and should be independently verified before making any financial decision.</p>
-                <p>JG Estate is not a licensed broker, bank, or payment processor. It does not hold client funds in escrow, provide investment or legal advice, or guarantee any transaction — always work with a licensed professional for the actual purchase, sale, or financing of property.</p>
+                <p>Listings on JGEstate are shown as reported by developers and agents and may change without notice. Prices, availability, construction status, and rental yields are estimates and should be independently verified before making any financial decision.</p>
+                <p>JGEstate is not a licensed broker, bank, or payment processor. It does not hold client funds in escrow, provide investment or legal advice, or guarantee any transaction — always work with a licensed professional for the actual purchase, sale, or financing of property.</p>
               </>
             )}
           </div>
@@ -4321,6 +4440,11 @@ const Dashboard = () => {
             <p className="text-sm text-stone-500 leading-relaxed max-w-xs">
               A global marketplace to buy, sell, and rent verified real estate — priced in local currency with live market data across {COUNTRIES.length} countries.
             </p>
+            {/* Corporate disclosure: JGEstate is the product; JGAI is the registered
+                company behind it. Stated plainly here rather than only buried in legal copy. */}
+            <a href="https://www.jgdeveloper.com" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-brand-600 hover:underline block">
+              A JGAI product · jgdeveloper.com
+            </a>
             <a href={`tel:${AGENT_PHONE.replace(/\s/g, '')}`} className="text-sm font-bold text-stone-700 hover:text-brand-600 block">{AGENT_PHONE}</a>
           </div>
 
@@ -4335,7 +4459,7 @@ const Dashboard = () => {
 
           <div className="space-y-3">
             <p className="micro-label text-stone-400">Support</p>
-            <button onClick={() => contactAdvisor("Hi! I'd like to speak with a JG Estate advisor.")} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Talk to an Advisor</button>
+            <button onClick={() => contactAdvisor("Hi! I'd like to speak with a JGEstate advisor.")} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Talk to an Advisor</button>
             <button onClick={() => setInfoModal('about')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">About</button>
             <button onClick={() => setInfoModal('careers')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Careers</button>
             <button onClick={() => setInfoModal('contact')} className="block text-sm font-semibold text-stone-600 hover:text-brand-600 text-left">Contact</button>
@@ -4387,7 +4511,9 @@ const Dashboard = () => {
         <div className="bg-stone-950">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-white/50 font-medium text-center sm:text-left">
-              © {new Date().getFullYear()} JG Estate. Listings shown are for demonstration. Payments are processed by licensed third-party providers — this platform does not hold client funds in escrow.
+              © {new Date().getFullYear()}{' '}
+              <a href="https://www.jgdeveloper.com" target="_blank" rel="noopener noreferrer" className="font-bold text-white/70 hover:text-white hover:underline">JGAI</a>
+              {' '}— JGEstate is a SaaS product of JGAI. Listings shown are for demonstration. Payments are processed by licensed third-party providers — this platform does not hold client funds in escrow.
             </p>
             <div className="flex items-center gap-4 text-xs font-bold text-brand-300 uppercase tracking-widest">
               <span>Global Marketplace</span>
@@ -4400,7 +4526,7 @@ const Dashboard = () => {
 
       {/* Floating compare tray — appears once 1+ properties are selected via the
           compare toggle on each card. Standard pattern on every major property
-          portal; JG Estate had no equivalent before this. */}
+          portal; JGEstate had no equivalent before this. */}
       {compareIds.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-[55] bg-white border-t border-stone-200 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
@@ -4490,7 +4616,7 @@ const Dashboard = () => {
           <Button
             onClick={() => {
               const names = compareIds.map(id => projects.find(p => p.id === id)?.name).filter(Boolean).join(', ');
-              contactAdvisor(`Hi! I'm comparing these properties on JG Estate: ${names}. Can an advisor help me decide?`);
+              contactAdvisor(`Hi! I'm comparing these properties on JGEstate: ${names}. Can an advisor help me decide?`);
             }}
             className="w-full bg-brand-600 text-white hover:bg-brand-700 font-bold rounded-xl sm:rounded-2xl py-5 sm:py-7 text-sm uppercase tracking-widest shadow-xl"
           >
@@ -4538,7 +4664,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <Button
-                      onClick={() => contactAdvisor(`Hi! I'd like to learn more about ${viewingBuilder}'s available projects on JG Estate.`)}
+                      onClick={() => contactAdvisor(`Hi! I'd like to learn more about ${viewingBuilder}'s available projects on JGEstate.`)}
                       className="bg-brand-600 text-white hover:bg-brand-700 rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6 shrink-0"
                     >
                       <Mail className="w-4 h-4 mr-2" />
@@ -4617,7 +4743,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex flex-col gap-2.5 shrink-0 w-full sm:w-auto">
                       <Button
-                        onClick={() => contactAdvisor(`Hi ${currentShowcaseAgent.name}! I found your storefront on JG Estate and would like to know more about your listings.`)}
+                        onClick={() => contactAdvisor(`Hi ${currentShowcaseAgent.name}! I found your storefront on JGEstate and would like to know more about your listings.`)}
                         className="bg-brand-600 text-white hover:bg-brand-700 rounded-xl sm:rounded-2xl font-bold px-6 py-5 sm:py-6"
                       >
                         <Mail className="w-4 h-4 mr-2" />
