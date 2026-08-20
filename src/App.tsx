@@ -1466,25 +1466,35 @@ const InvestmentTracker: React.FC<{ investment: Investment, onRelist: (i: Invest
           </div>
         )}
 
+        {investment.status !== 'completed' && (
+          <p className="text-[10px] text-stone-400 font-medium leading-relaxed pt-2">
+            JGEstate doesn't process payments directly — coordinate the actual transfer with your agent, then use "Record Payment" below to log it here once it's really been sent.
+          </p>
+        )}
         <div className="flex items-center justify-between pt-6 border-t border-stone-100">
           <div className="flex items-center gap-2 text-[12px] text-stone-400 uppercase tracking-widest font-bold">
             <Clock className="w-4 h-4" />
             Due: {new Date(investment.endDate).toLocaleDateString()}
           </div>
           <div className="flex gap-3">
-            <Button 
+            <Button
               onClick={() => onRelist(investment)}
-              variant="outline" 
+              variant="outline"
               className="h-10 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-xl font-bold px-5"
             >
               Relist <Zap className="w-4 h-4 ml-2" />
             </Button>
-            <Button 
-              onClick={() => onPay(investment)}
+            <Button
+              onClick={() => {
+                if (investment.status === 'completed') return;
+                if (window.confirm("Only confirm this if you've already sent this installment to the agent/developer directly. This just logs it here — JGEstate doesn't move the money.")) {
+                  onPay(investment);
+                }
+              }}
               disabled={investment.status === 'completed'}
               className="h-10 text-xs bg-stone-900 text-white hover:bg-brand-600 rounded-xl font-bold px-6"
             >
-              {investment.status === 'completed' ? 'Paid' : 'Pay'} <ChevronRight className="w-4 h-4 ml-1" />
+              {investment.status === 'completed' ? 'Paid' : 'Record Payment'} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>
@@ -2303,7 +2313,15 @@ const Dashboard = () => {
   };
 
   const confirmBooking = async (planType: 'Full Payment' | 'Installments' | 'Financed') => {
-    if (!user || !selectedUnit || !selectedProject) return;
+    if (!selectedUnit || !selectedProject) return;
+    if (!user) {
+      // Previously this silently did nothing for signed-out visitors — a real
+      // "the button doesn't work" bug. Send them to sign in instead.
+      setIsBookingOpen(false);
+      openAuthModal('signin');
+      notify('Sign in to submit a reservation request.', 'success');
+      return;
+    }
 
     try {
       const startDate = new Date();
@@ -2311,8 +2329,14 @@ const Dashboard = () => {
       const totalInstallments = planType === 'Full Payment' ? 1 : planType === 'Installments' ? 12 : 60;
       endDate.setMonth(startDate.getMonth() + (planType === 'Full Payment' ? 1 : planType === 'Installments' ? 12 : 60));
 
-      const bookingAmount = selectedUnit.bookingAmount || Math.round(selectedUnit.price * 0.02);
-
+      // No payment gateway is wired into JGEstate — this is a reservation
+      // REQUEST, not a completed purchase (the dialog itself says so: "the
+      // seller's agent will follow up to confirm"). So nothing here should
+      // claim money has already moved or a document has already been
+      // verified/signed. paidAmount starts at 0 and every document starts
+      // 'pending' — they only change once a real agent confirms something
+      // off-platform and updates it (via the "Pay" milestone button, which
+      // is a self-reported record, not a live checkout).
       await addDoc(collection(db, 'investments'), {
         unitId: selectedUnit.id,
         projectId: selectedProject.id,
@@ -2321,15 +2345,15 @@ const Dashboard = () => {
         paymentPlan: {
           type: planType,
           totalInstallments,
-          paidInstallments: 1
+          paidInstallments: 0
         },
         totalAmount: selectedUnit.price,
-        paidAmount: bookingAmount,
+        paidAmount: 0,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         status: 'active',
         documents: [
-          { name: 'Sale Agreement', type: 'Sale Agreement', status: 'verified' },
+          { name: 'Sale Agreement', type: 'Sale Agreement', status: 'pending' },
           { name: 'Title Deed', type: 'Khata', status: 'pending' },
           { name: 'Possession Letter', type: 'Possession Letter', status: 'pending' },
           { name: 'Tax Receipt', type: 'Tax Receipt', status: 'pending' }
@@ -2344,8 +2368,9 @@ const Dashboard = () => {
 
       setIsBookingOpen(false);
       setSelectedUnit(null);
+      notify('Reservation request sent — the agent will follow up to confirm.', 'success');
     } catch (error) {
-      notify("Couldn't complete your booking. Please try again.");
+      notify("Couldn't submit your reservation request. Please try again.");
       handleFirestoreError(error, OperationType.WRITE, 'booking');
     }
   };
@@ -4193,7 +4218,7 @@ const Dashboard = () => {
                     <section id="pd-units" className="space-y-6 pt-2">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
                         <div>
-                          <h3 className="text-lg sm:text-2xl font-bold text-stone-900">Interviews & Unit Inventories</h3>
+                          <h3 className="text-lg sm:text-2xl font-bold text-stone-900">Available Unit Inventory</h3>
                           <p className="text-[11px] font-bold text-stone-400 uppercase tracking-widest mt-1">Reserve a unit with a refundable deposit</p>
                         </div>
                         
