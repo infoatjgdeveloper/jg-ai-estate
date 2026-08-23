@@ -370,12 +370,15 @@ interface AgentProfile {
   bio: string;
 }
 
+// Trimmed to US + India (JGEstate's only two active markets) — previously included
+// Europe/Middle-East-only advisors that getAgentForProject() could assign to ANY
+// listing regardless of region (a real bug: e.g. a Southern-Europe specialist was
+// showing up as the "listing agent" on an India property). Fixed both at once:
+// the roster now only contains agents whose claimed regions still exist on the
+// platform, and the assignment function below actually matches on region.
 const AGENT_ROSTER: AgentProfile[] = [
-  { id: 'isabelle-hart', name: 'Isabelle Hart', title: 'Senior International Advisor', phone: '+44 20 7946 0958', regions: ['Europe'], bio: 'Twelve years advising cross-border buyers into prime European residential markets, from new-build launches to landmark restorations.' },
   { id: 'marcus-chen', name: 'Marcus Chen', title: 'Luxury Sales Director', phone: '+1 212 555 0148', regions: ['North America'], bio: 'Focused on flagship developments across New York and Miami, with a track record in full-floor and penthouse transactions.' },
-  { id: 'amira-al-suwaidi', name: 'Amira Al Suwaidi', title: 'Senior Property Consultant', phone: '+971 4 555 0193', regions: ['Middle East'], bio: 'Specialist in branded residences and waterfront developments across Dubai, working closely with master developers on delivery timelines.' },
   { id: 'rohan-mehta', name: 'Rohan Mehta', title: 'Principal Broker', phone: '+91 98200 55123', regions: ['Asia'], bio: 'RERA-registered broker covering Mumbai and Bengaluru\'s prime residential corridors, with deep developer relationships for early-phase access.' },
-  { id: 'sofia-almeida', name: 'Sofia Almeida', title: 'International Advisor', phone: '+351 21 555 0176', regions: ['Europe'], bio: 'Guides overseas buyers through Iberian and Southern European purchases end to end, from reservation to golden-visa paperwork.' },
   { id: 'daniel-osei', name: 'Daniel Osei', title: 'Global Client Advisor', phone: '+1 305 555 0122', regions: ['North America', 'Global'], bio: 'Works with relocating and diaspora buyers across multiple markets, coordinating remote viewings and financing introductions.' },
 ];
 
@@ -385,8 +388,13 @@ const hashProjectId = (id: string) => {
   return h;
 };
 
-const getAgentForProject = (project: { id: string }): AgentProfile =>
-  AGENT_ROSTER[hashProjectId(project.id) % AGENT_ROSTER.length];
+const getAgentForProject = (project: { id: string; region?: string }): AgentProfile => {
+  const matches = project.region
+    ? AGENT_ROSTER.filter(a => a.regions.includes(project.region as any) || a.regions.includes('Global'))
+    : AGENT_ROSTER;
+  const pool = matches.length > 0 ? matches : AGENT_ROSTER;
+  return pool[hashProjectId(project.id) % pool.length];
+};
 
 // --- Motion primitives — shared across the homepage so every section animates in
 // consistently on scroll, instead of one-off transitions bolted onto individual cards. ---
@@ -485,7 +493,7 @@ const getAssistantReply = (raw: string): string => {
     return "For buyers: search, get ID-verified, compare properties, then close through a licensed local payment processor. For agents, builders and investors: create an account, list your inventory, manage every enquiry from one dashboard, and get discovered through your own Builder Portfolio or Broker Storefront page.";
   }
   if (/countr|market|where|europe|eu\b|dubai|india|usa|america/.test(q)) {
-    return `We're live across ${COUNTRIES.length} markets — all 27 EU member states, plus the UK, India, the United States and the UAE.`;
+    return `We're focused on two markets right now — the United States and India — so we can go deep on verification and data quality instead of spreading thin.`;
   }
   if (/emi|loan|mortgage|financ|afford/.test(q)) {
     return "I can't calculate that inside the chat yet, but the EMI calculator (top navigation, under Home Loans) will estimate your monthly payment from price, down payment and interest rate.";
@@ -5142,7 +5150,7 @@ const Dashboard = () => {
             <div className="space-y-3 sm:space-y-4">
               <Label className="micro-label text-stone-400">Select Operating Region</Label>
               <div className="flex flex-wrap gap-2.5 sm:gap-3">
-                {['Global', 'Europe', 'North America', 'Middle East', 'Asia'].map((r) => (
+                {['Global', 'North America', 'Asia'].map((r) => (
                   <button
                     key={r}
                     type="button"

@@ -10,17 +10,7 @@
 // ---------- Currency ----------
 export const CURRENCY_META: Record<string, { symbol: string; locale: string; suffix?: boolean }> = {
   USD: { symbol: '$', locale: 'en-US' },
-  EUR: { symbol: '€', locale: 'de-DE' },
-  GBP: { symbol: '£', locale: 'en-GB' },
   INR: { symbol: '₹', locale: 'en-IN' },
-  AED: { symbol: 'AED ', locale: 'en-AE' },
-  PLN: { symbol: 'zł', locale: 'pl-PL', suffix: true },
-  BGN: { symbol: 'лв', locale: 'bg-BG', suffix: true },
-  CZK: { symbol: 'Kč', locale: 'cs-CZ', suffix: true },
-  DKK: { symbol: 'kr', locale: 'da-DK', suffix: true },
-  HUF: { symbol: 'Ft', locale: 'hu-HU', suffix: true },
-  RON: { symbol: 'lei', locale: 'ro-RO', suffix: true },
-  SEK: { symbol: 'kr', locale: 'sv-SE', suffix: true },
 };
 
 const formatIndianWord = (price: number) => {
@@ -40,15 +30,11 @@ export const formatPrice = (price: number, currency: string = 'USD'): string => 
   return meta.suffix ? `${value} ${meta.symbol}` : `${meta.symbol}${value}`;
 };
 
-// Rough static FX rates to USD — for cross-currency budget-range filtering only, not financial advice.
+// Rough static FX rate to USD — for cross-currency budget-range filtering only, not financial advice.
 export const FX_TO_USD: Record<string, number> = {
-  USD: 1, EUR: 1.09, GBP: 1.27, PLN: 0.25, AED: 0.27, INR: 0.012,
-  BGN: 0.56, CZK: 0.044, DKK: 0.145, HUF: 0.0028, RON: 0.22, SEK: 0.095,
+  USD: 1, INR: 0.012,
 };
 export const toUSD = (price: number, currency: string = 'USD'): number => price * (FX_TO_USD[currency] ?? 1);
-// Legacy EUR-basis helpers, kept in case anything else still references them.
-export const FX_TO_EUR: Record<string, number> = { EUR: 1, USD: 0.92, GBP: 1.17, PLN: 0.23, AED: 0.25, INR: 0.0105 };
-export const toEUR = (price: number, currency: string = 'EUR'): number => price * (FX_TO_EUR[currency] ?? 1);
 
 export const formatPriceFull = (price: number, currency: string = 'USD'): string => {
   const meta = CURRENCY_META[currency] || CURRENCY_META.USD;
@@ -86,144 +72,17 @@ const makeSeries = (base: number, drift: number, seedOffset: number): number[] =
   return points;
 };
 
-// All 27 EU member states, plus India, the United States, the UAE and the UK
-// (the last kept alongside the EU block since it's already got a live London
-// listing in the seed catalog below — flag as a follow-up if it should come out).
+// JGEstate narrowed its market focus to the United States and India only
+// (previously covered all 27 EU member states plus the UK and UAE — that
+// coverage was removed in full, not just hidden, per a deliberate scope
+// decision to go deep on two markets instead of thin across many).
 export const COUNTRIES: Country[] = [
-  // ---------- European Union (27) ----------
-  {
-    code: 'AT', name: 'Austria', flag: '🇦🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Vienna', pricePerUnit: 5800, yoyChange: 2.4, series: makeSeries(5620, 15, 16) }],
-  },
-  {
-    code: 'BE', name: 'Belgium', flag: '🇧🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Brussels', pricePerUnit: 3400, yoyChange: 1.6, series: makeSeries(3320, 8, 17) }],
-  },
-  {
-    code: 'BG', name: 'Bulgaria', flag: '🇧🇬', currency: 'BGN', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Sofia', pricePerUnit: 2200, yoyChange: 8.9, series: makeSeries(1980, 20, 18) }],
-  },
-  {
-    code: 'HR', name: 'Croatia', flag: '🇭🇷', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Zagreb', pricePerUnit: 2600, yoyChange: 5.2, series: makeSeries(2440, 14, 19) }],
-  },
-  {
-    code: 'CY', name: 'Cyprus', flag: '🇨🇾', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Nicosia', pricePerUnit: 2400, yoyChange: 4.1, series: makeSeries(2280, 11, 20) }],
-  },
-  {
-    code: 'CZ', name: 'Czechia', flag: '🇨🇿', currency: 'CZK', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Prague', pricePerUnit: 115000, yoyChange: 3.7, series: makeSeries(110000, 480, 21) }],
-  },
-  {
-    code: 'DK', name: 'Denmark', flag: '🇩🇰', currency: 'DKK', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Copenhagen', pricePerUnit: 48000, yoyChange: 2.9, series: makeSeries(46500, 130, 22) }],
-  },
-  {
-    code: 'EE', name: 'Estonia', flag: '🇪🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Tallinn', pricePerUnit: 3200, yoyChange: 3.4, series: makeSeries(3080, 10, 23) }],
-  },
-  {
-    code: 'FI', name: 'Finland', flag: '🇫🇮', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Helsinki', pricePerUnit: 5200, yoyChange: -0.8, series: makeSeries(5280, -8, 24) }],
-  },
-  {
-    code: 'FR', name: 'France', flag: '🇫🇷', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Paris', pricePerUnit: 10450, yoyChange: -1.4, series: makeSeries(10650, -18, 2) },
-      { city: 'Lyon', pricePerUnit: 4900, yoyChange: 1.8, series: makeSeries(4780, 10, 3) },
-    ],
-  },
-  {
-    code: 'DE', name: 'Germany', flag: '🇩🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Berlin', pricePerUnit: 5450, yoyChange: 3.2, series: makeSeries(5250, 18, 0) },
-      { city: 'Munich', pricePerUnit: 9200, yoyChange: 2.1, series: makeSeries(8950, 21, 1) },
-    ],
-  },
-  {
-    code: 'GR', name: 'Greece', flag: '🇬🇷', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Athens', pricePerUnit: 2600, yoyChange: 9.8, series: makeSeries(2320, 26, 25) }],
-  },
-  {
-    code: 'HU', name: 'Hungary', flag: '🇭🇺', currency: 'HUF', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Budapest', pricePerUnit: 750000, yoyChange: 5.5, series: makeSeries(710000, 3600, 26) }],
-  },
-  {
-    code: 'IE', name: 'Ireland', flag: '🇮🇪', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Dublin', pricePerUnit: 5800, yoyChange: 6.1, series: makeSeries(5480, 27, 27) }],
-  },
-  {
-    code: 'IT', name: 'Italy', flag: '🇮🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Milan', pricePerUnit: 5350, yoyChange: 3.8, series: makeSeries(5150, 17, 7) }],
-  },
-  {
-    code: 'LV', name: 'Latvia', flag: '🇱🇻', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Riga', pricePerUnit: 2100, yoyChange: 2.7, series: makeSeries(2040, 6, 28) }],
-  },
-  {
-    code: 'LT', name: 'Lithuania', flag: '🇱🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Vilnius', pricePerUnit: 2400, yoyChange: 4.4, series: makeSeries(2280, 12, 29) }],
-  },
-  {
-    code: 'LU', name: 'Luxembourg', flag: '🇱🇺', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Luxembourg City', pricePerUnit: 9500, yoyChange: -2.1, series: makeSeries(9750, -22, 30) }],
-  },
-  {
-    code: 'MT', name: 'Malta', flag: '🇲🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Valletta', pricePerUnit: 4200, yoyChange: 5.9, series: makeSeries(3960, 22, 31) }],
-  },
-  {
-    code: 'NL', name: 'Netherlands', flag: '🇳🇱', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Amsterdam', pricePerUnit: 7100, yoyChange: 4.3, series: makeSeries(6800, 26, 6) }],
-  },
-  {
-    code: 'PL', name: 'Poland', flag: '🇵🇱', currency: 'PLN', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Warsaw', pricePerUnit: 16800, yoyChange: 8.4, series: makeSeries(15500, 108, 9) }],
-  },
-  {
-    code: 'PT', name: 'Portugal', flag: '🇵🇹', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Lisbon', pricePerUnit: 4800, yoyChange: 7.1, series: makeSeries(4450, 30, 8) }],
-  },
-  {
-    code: 'RO', name: 'Romania', flag: '🇷🇴', currency: 'RON', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Bucharest', pricePerUnit: 8700, yoyChange: 6.6, series: makeSeries(8100, 50, 32) }],
-  },
-  {
-    code: 'SK', name: 'Slovakia', flag: '🇸🇰', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Bratislava', pricePerUnit: 3100, yoyChange: 3.0, series: makeSeries(3010, 8, 33) }],
-  },
-  {
-    code: 'SI', name: 'Slovenia', flag: '🇸🇮', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Ljubljana', pricePerUnit: 3400, yoyChange: 4.8, series: makeSeries(3220, 16, 34) }],
-  },
-  {
-    code: 'ES', name: 'Spain', flag: '🇪🇸', currency: 'EUR', region: 'Europe', unitLabel: 'm²',
-    cities: [
-      { city: 'Barcelona', pricePerUnit: 4650, yoyChange: 5.6, series: makeSeries(4380, 24, 4) },
-      { city: 'Madrid', pricePerUnit: 4300, yoyChange: 6.2, series: makeSeries(4020, 26, 5) },
-    ],
-  },
-  {
-    code: 'SE', name: 'Sweden', flag: '🇸🇪', currency: 'SEK', region: 'Europe', unitLabel: 'm²',
-    cities: [{ city: 'Stockholm', pricePerUnit: 85000, yoyChange: 1.2, series: makeSeries(84000, 100, 35) }],
-  },
-
-  // ---------- Beyond the EU ----------
-  {
-    code: 'GB', name: 'United Kingdom', flag: '🇬🇧', currency: 'GBP', region: 'Europe', unitLabel: 'sqft',
-    cities: [{ city: 'London', pricePerUnit: 850, yoyChange: -0.6, series: makeSeries(862, -6, 10) }],
-  },
   {
     code: 'US', name: 'United States', flag: '🇺🇸', currency: 'USD', region: 'North America', unitLabel: 'sqft',
     cities: [
       { city: 'New York', pricePerUnit: 1450, yoyChange: 2.9, series: makeSeries(1390, 16, 11) },
       { city: 'Miami', pricePerUnit: 620, yoyChange: 4.7, series: makeSeries(580, 12, 12) },
     ],
-  },
-  {
-    code: 'AE', name: 'UAE', flag: '🇦🇪', currency: 'AED', region: 'Middle East', unitLabel: 'sqft',
-    cities: [{ city: 'Dubai', pricePerUnit: 1780, yoyChange: 11.2, series: makeSeries(1580, 60, 13) }],
   },
   {
     code: 'IN', name: 'India', flag: '🇮🇳', currency: 'INR', region: 'Asia', unitLabel: 'sqft',
@@ -333,105 +192,6 @@ const jitter = (seed: string) => {
 
 const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
   {
-    name: 'Spree Terraces', description: 'Riverside new-build apartments in Friedrichshain with A+ energy rating, floor heating, and private balconies overlooking the Spree.',
-    location: 'Friedrichshain, Berlin', city: 'Berlin', country: 'Germany', countryCode: 'DE', currency: 'EUR', region: 'Europe',
-    totalUnits: 64, basePrice: 620000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Bauwerk',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '68 - 118 m²',
-    constructionStatus: 'Under Construction', rentalYield: 3.6, aiScore: 90,
-    amenities: ['A+ Energy Rating', 'Underfloor Heating', 'Bike Storage', 'Riverside Balcony'],
-    landmarks: [{ name: 'Ostkreuz S-Bahn', distance: '6 mins' }, { name: 'East Side Gallery', distance: '10 mins' }],
-  },
-  {
-    name: 'Maximilian Residenz', description: 'Altbau-style new construction near the English Garden, blending classic Munich facades with modern smart-home interiors.',
-    location: 'Schwabing, Munich', city: 'Munich', country: 'Germany', countryCode: 'DE', currency: 'EUR', region: 'Europe',
-    totalUnits: 40, basePrice: 980000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'DEMOS Wohnbau',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['3 BR', '4 BR'], areaRange: '95 - 165 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 3.1, aiScore: 93,
-    amenities: ['Smart Home', 'Parkside Location', 'Concierge', 'Underground Parking'],
-    landmarks: [{ name: 'English Garden', distance: '4 mins' }, { name: 'Munich Hbf', distance: '15 mins' }],
-  },
-  {
-    name: 'Haussmann Lumière', description: 'Restored Haussmannian building in the 9th arrondissement, high ceilings, herringbone parquet, walkable to Opéra.',
-    location: '9th Arrondissement, Paris', city: 'Paris', country: 'France', countryCode: 'FR', currency: 'EUR', region: 'Europe',
-    totalUnits: 22, basePrice: 1150000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Cogedim',
-    verified: true, marketTrend: 'Bearish', bhkOptions: ['2 BR', '3 BR'], areaRange: '58 - 105 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 2.9, aiScore: 88,
-    amenities: ['Herringbone Parquet', 'High Ceilings', 'Concierge (Gardien)', 'Elevator'],
-    landmarks: [{ name: 'Opéra Garnier', distance: '5 mins' }, { name: 'Gare Saint-Lazare', distance: '8 mins' }],
-  },
-  {
-    name: 'Presqu\'île Loft District', description: 'Converted industrial lofts on the Presqu\'île peninsula, exposed brick, walkable riverside city center.',
-    location: 'Presqu\'île, Lyon', city: 'Lyon', country: 'France', countryCode: 'FR', currency: 'EUR', region: 'Europe',
-    totalUnits: 30, basePrice: 385000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Bouygues Immobilier',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '45 - 80 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.2, aiScore: 85,
-    amenities: ['Exposed Brick Loft', 'Riverside Walk', 'Bike Path Access'],
-    landmarks: [{ name: 'Part-Dieu Station', distance: '10 mins' }, { name: 'Rhône Riverbank', distance: '2 mins' }],
-  },
-  {
-    name: 'Eixample Terraza', description: 'Modernist-block apartments in the Eixample grid, private terrace, steps from Sagrada Família.',
-    location: 'Eixample, Barcelona', city: 'Barcelona', country: 'Spain', countryCode: 'ES', currency: 'EUR', region: 'Europe',
-    totalUnits: 48, basePrice: 495000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'AEDAS Homes',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '72 - 130 m²',
-    constructionStatus: 'Under Construction', rentalYield: 4.8, aiScore: 91,
-    amenities: ['Private Terrace', 'Rooftop Pool', 'Solar Panels', 'Communal Garden'],
-    landmarks: [{ name: 'Sagrada Família', distance: '7 mins' }, { name: 'Passeig de Gràcia', distance: '5 mins' }],
-  },
-  {
-    name: 'Salamanca Prime', description: 'Prime-district Madrid residences with polished stone lobbies and 24-hour concierge, near Retiro Park.',
-    location: 'Salamanca, Madrid', city: 'Madrid', country: 'Spain', countryCode: 'ES', currency: 'EUR', region: 'Europe',
-    totalUnits: 36, basePrice: 720000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Pryconsa',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['3 BR', '4 BR'], areaRange: '110 - 180 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.1, aiScore: 92,
-    amenities: ['24h Concierge', 'Marble Lobby', 'Retiro Park Views', 'Private Gym'],
-    landmarks: [{ name: 'Retiro Park', distance: '3 mins' }, { name: 'Puerta de Alcalá', distance: '6 mins' }],
-  },
-  {
-    name: 'Canal Zicht Residences', description: 'Canal-front new-build in Amsterdam Noord with sustainable timber construction and roof terraces.',
-    location: 'Amsterdam Noord', city: 'Amsterdam', country: 'Netherlands', countryCode: 'NL', currency: 'EUR', region: 'Europe',
-    totalUnits: 52, basePrice: 645000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'AM',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '70 - 120 m²',
-    constructionStatus: 'Pre-Launch', rentalYield: 3.9, aiScore: 89,
-    amenities: ['Canal Views', 'Timber Sustainable Build', 'Roof Terrace', 'EV Charging'],
-    landmarks: [{ name: 'Amsterdam Centraal (ferry)', distance: '8 mins' }, { name: 'NDSM Wharf', distance: '4 mins' }],
-  },
-  {
-    name: 'Navigli Atelier', description: 'Design-forward residences along the Navigli canals, close to Milan\'s fashion and design district.',
-    location: 'Navigli, Milan', city: 'Milan', country: 'Italy', countryCode: 'IT', currency: 'EUR', region: 'Europe',
-    totalUnits: 28, basePrice: 560000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'COIMA',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '55 - 95 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.0, aiScore: 87,
-    amenities: ['Canal-side Terrace', 'Designer Fit-out', 'Concierge'],
-    landmarks: [{ name: 'Navigli Canals', distance: '1 min' }, { name: 'Milano Centrale', distance: '18 mins' }],
-  },
-  {
-    name: 'Tejo Vista Residences', description: 'Riverfront Lisbon apartments with panoramic Tejo views, growing golden-visa demand district.',
-    location: 'Parque das Nações, Lisbon', city: 'Lisbon', country: 'Portugal', countryCode: 'PT', currency: 'EUR', region: 'Europe',
-    totalUnits: 60, basePrice: 415000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Vanguard Properties',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '75 - 125 m²',
-    constructionStatus: 'Under Construction', rentalYield: 5.1, aiScore: 90,
-    amenities: ['River Views', 'Rooftop Pool', 'Co-working Lounge', 'EV Charging'],
-    landmarks: [{ name: 'Vasco da Gama Bridge', distance: '5 mins' }, { name: 'Oriente Station', distance: '7 mins' }],
-  },
-  {
-    name: 'Wisła Bulwary', description: 'Riverside Warsaw development on the Wisła boulevards, fast-growing district with strong rental demand.',
-    location: 'Powiśle, Warsaw', city: 'Warsaw', country: 'Poland', countryCode: 'PL', currency: 'PLN', region: 'Europe',
-    totalUnits: 70, basePrice: 2350000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Echo Investment',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '58 - 98 m²',
-    constructionStatus: 'Under Construction', rentalYield: 5.6, aiScore: 88,
-    amenities: ['River Boulevard Access', 'Underground Parking', 'Playground', 'Bike Storage'],
-    landmarks: [{ name: 'Copernicus Science Centre', distance: '4 mins' }, { name: 'Warsaw Centralna', distance: '12 mins' }],
-  },
-  {
-    name: 'Riverside Wharf Collection', description: 'South Bank riverside development with panoramic Thames views, part of a major regeneration zone.',
-    location: 'Nine Elms, London', city: 'London', country: 'United Kingdom', countryCode: 'GB', currency: 'GBP', region: 'Europe',
-    totalUnits: 90, basePrice: 780000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Ballymore Group',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '520 - 1,150 sqft',
-    constructionStatus: 'Under Construction', rentalYield: 4.4, aiScore: 89,
-    amenities: ['Thames Views', 'Concierge', 'Residents Gym', 'Private Cinema Room'],
-    landmarks: [{ name: 'Nine Elms Station', distance: '3 mins' }, { name: 'US Embassy', distance: '5 mins' }],
-  },
-  {
     name: 'Hudson Yards Sky Collection', description: 'Full-floor residences above the High Line with skyline views and 5-star hotel-style amenities.',
     location: 'Hudson Yards, New York', city: 'New York', country: 'United States', countryCode: 'US', currency: 'USD', region: 'North America',
     totalUnits: 54, basePrice: 2450000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Related Companies',
@@ -448,15 +208,6 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
     constructionStatus: 'Under Construction', rentalYield: 4.9, aiScore: 90,
     amenities: ['Bay Views', 'Marina Access', 'Infinity Pool', 'Valet Parking'],
     landmarks: [{ name: 'Brickell City Centre', distance: '4 mins' }, { name: 'Miami Int\'l Airport', distance: '18 mins' }],
-  },
-  {
-    name: 'Palm Jumeirah Vista', description: 'Beachfront branded residences on the Palm with private beach access and skyline views of the Dubai coastline.',
-    location: 'Palm Jumeirah, Dubai', city: 'Dubai', country: 'UAE', countryCode: 'AE', currency: 'AED', region: 'Middle East',
-    totalUnits: 80, basePrice: 3200000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Nakheel',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR', 'Penthouse'], areaRange: '1,400 - 4,800 sqft',
-    constructionStatus: 'Under Construction', rentalYield: 6.8, aiScore: 94,
-    amenities: ['Private Beach', 'Infinity Pool', 'Concierge', 'Valet & Security'],
-    landmarks: [{ name: 'Atlantis The Palm', distance: '6 mins' }, { name: 'Dubai Marina', distance: '15 mins' }],
   },
   {
     name: 'Lodha World Towers', description: 'Iconic luxury residences in the heart of Mumbai with world-class amenities and Arabian Sea views.',
@@ -542,178 +293,6 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
     amenities: ['Central Clubhouse', 'Amphitheatre', 'Jogging Trails', 'Multi-Sport Courts'],
     landmarks: [{ name: 'ITPL Whitefield', distance: '8 mins' }, { name: 'Whitefield Metro', distance: '6 mins' }],
   },
-  // --- Dubai, UAE — additional real, web-verified developer ---
-  {
-    name: 'Emaar Beachfront', description: 'A private-island waterfront district between Dubai Marina and Palm Jumeirah, developed by Emaar Properties — one of Dubai\'s most established master developers.',
-    location: 'Emaar Beachfront, Dubai', city: 'Dubai', country: 'UAE', countryCode: 'AE', currency: 'AED', region: 'Middle East',
-    totalUnits: 100, basePrice: 3800000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Emaar Properties',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '750 - 2,200 sqft',
-    constructionStatus: 'Under Construction', rentalYield: 6.2, aiScore: 93,
-    amenities: ['Private Beach Access', 'Marina Promenade', 'Infinity Pool', 'Beach Club'],
-    landmarks: [{ name: 'Dubai Marina', distance: '5 mins' }, { name: 'Palm Jumeirah', distance: '7 mins' }],
-  },
-  // --- Remaining EU markets + Delhi NCR — real, web-verified developers, giving every one
-  // of the 31 countries at least one genuine listing rather than market-index numbers only ---
-  {
-    name: 'Korso im Viertel Zwei', description: 'A 179-unit residential development in Leopoldstadt by Value One, one of Vienna\'s established project developers with over two decades in the market.',
-    location: 'Leopoldstadt, Vienna', city: 'Vienna', country: 'Austria', countryCode: 'AT', currency: 'EUR', region: 'Europe',
-    totalUnits: 44, basePrice: 522000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Value One',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['2 BR', '3 BR'], areaRange: '68 - 115 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 3.4, aiScore: 87,
-    amenities: ['Landscaped Courtyard', 'Bike Storage', 'Energy-Efficient Build'], landmarks: [{ name: 'Prater Park', distance: '8 mins' }, { name: 'Vienna Hbf', distance: '12 mins' }],
-  },
-  {
-    name: 'Northern Quarter Residences', description: 'High-rise residential development in Brussels\' Northern Quarter (Quartier Nord) business district by AG Real Estate, one of Belgium\'s largest listed property developers.',
-    location: 'Northern Quarter, Brussels', city: 'Brussels', country: 'Belgium', countryCode: 'BE', currency: 'EUR', region: 'Europe',
-    totalUnits: 38, basePrice: 306000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'AG Real Estate',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR'], areaRange: '55 - 95 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.0, aiScore: 85,
-    amenities: ['High-Rise Views', 'Underground Parking', 'Concierge'], landmarks: [{ name: 'Gare du Nord', distance: '3 mins' }, { name: 'EU Quarter', distance: '15 mins' }],
-  },
-  {
-    name: 'BLVD Residence', description: 'Residential development in Sofia by Arco Real Estate, active in the Bulgarian market since 2006.',
-    location: 'Sofia City Center, Sofia', city: 'Sofia', country: 'Bulgaria', countryCode: 'BG', currency: 'BGN', region: 'Europe',
-    totalUnits: 50, basePrice: 198000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Arco Real Estate',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '50 - 105 m²',
-    constructionStatus: 'Under Construction', rentalYield: 5.4, aiScore: 84,
-    amenities: ['Central Location', 'Underground Parking', 'Rooftop Terrace'], landmarks: [{ name: 'Vitosha Boulevard', distance: '5 mins' }, { name: 'Sofia Metro', distance: '4 mins' }],
-  },
-  {
-    name: 'Zagreb Riverside Homes', description: 'Residential development in Zagreb by NIVOGRADNJA d.o.o., a Croatian construction and development firm with over 5,000 apartments delivered nationally.',
-    location: 'Novi Zagreb', city: 'Zagreb', country: 'Croatia', countryCode: 'HR', currency: 'EUR', region: 'Europe',
-    totalUnits: 42, basePrice: 234000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'NIVOGRADNJA',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '60 - 110 m²',
-    constructionStatus: 'Under Construction', rentalYield: 4.9, aiScore: 83,
-    amenities: ['Sava Riverside Access', 'Playground', 'Secure Parking'], landmarks: [{ name: 'Zagreb City Center', distance: '10 mins' }, { name: 'Sava River', distance: '3 mins' }],
-  },
-  {
-    name: 'Delta Residence', description: 'A landmark residential development in central Nicosia by Rotos Group, a Cypriot developer with over 35 years and 1,000+ delivered residential units.',
-    location: 'City Center, Nicosia', city: 'Nicosia', country: 'Cyprus', countryCode: 'CY', currency: 'EUR', region: 'Europe',
-    totalUnits: 36, basePrice: 216000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Rotos Group',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '55 - 120 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.5, aiScore: 86,
-    amenities: ['Rooftop Pool', 'Gym', 'Covered Parking'], landmarks: [{ name: 'Eleftheria Square', distance: '4 mins' }, { name: 'Nicosia Old Town', distance: '6 mins' }],
-  },
-  {
-    name: 'Metrostav Vltava Flats', description: 'Apartment development in Prague by Metrostav Group, which has completed over 2,800 flats across ten residential projects.',
-    location: 'Karlín, Prague', city: 'Prague', country: 'Czechia', countryCode: 'CZ', currency: 'CZK', region: 'Europe',
-    totalUnits: 58, basePrice: 10350000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Metrostav Group',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '48 - 90 m²',
-    constructionStatus: 'Under Construction', rentalYield: 4.1, aiScore: 88,
-    amenities: ['Vltava River Access', 'Bike Storage', 'Green Courtyard'], landmarks: [{ name: 'Karlín Metro', distance: '5 mins' }, { name: 'Prague Old Town', distance: '12 mins' }],
-  },
-  {
-    name: 'C.F. Møllers Have', description: 'A residential development in Ørestad by Skanska, adjacent to the metro, part of Skanska\'s broader Greater Copenhagen residential program.',
-    location: 'Ørestad, Copenhagen', city: 'Copenhagen', country: 'Denmark', countryCode: 'DK', currency: 'DKK', region: 'Europe',
-    totalUnits: 64, basePrice: 4320000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Skanska',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['2 BR', '3 BR'], areaRange: '65 - 115 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 3.6, aiScore: 90,
-    amenities: ['Metro Adjacent', 'Landscaped Courtyard', 'Bike Parking'], landmarks: [{ name: 'Ørestad Metro', distance: '2 mins' }, { name: 'Copenhagen Airport', distance: '15 mins' }],
-  },
-  {
-    name: 'Tallinn Old Town Residences', description: 'Large-scale residential development in Tallinn by Pro Kapital Grupp, an Estonian developer active across the Baltic capitals since 1994.',
-    location: 'Kesklinn, Tallinn', city: 'Tallinn', country: 'Estonia', countryCode: 'EE', currency: 'EUR', region: 'Europe',
-    totalUnits: 46, basePrice: 288000, imageUrl: img('1616486338812-3dadae4b4ace'), developerName: 'Pro Kapital Grupp',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR'], areaRange: '50 - 95 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.3, aiScore: 87,
-    amenities: ['Old Town Proximity', 'Sauna', 'Secure Parking'], landmarks: [{ name: 'Tallinn Old Town', distance: '5 mins' }, { name: 'Baltic Sea Harbor', distance: '7 mins' }],
-  },
-  {
-    name: 'NCC Helsinki Residences', description: 'Residential development in Helsinki by NCC, one of the leading construction and development companies in the Nordics.',
-    location: 'Kalasatama, Helsinki', city: 'Helsinki', country: 'Finland', countryCode: 'FI', currency: 'EUR', region: 'Europe',
-    totalUnits: 52, basePrice: 468000, imageUrl: img('1600607687939-ce8a6c25118c'), developerName: 'NCC',
-    verified: true, marketTrend: 'Bearish', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '45 - 100 m²',
-    constructionStatus: 'Under Construction', rentalYield: 3.3, aiScore: 89,
-    amenities: ['Waterfront District', 'Sauna', 'Bike Storage'], landmarks: [{ name: 'Kalasatama Metro', distance: '3 mins' }, { name: 'Helsinki Center', distance: '10 mins' }],
-  },
-  {
-    name: 'The Edge Kallithea', description: 'Residential development in Kallithea, Athens by Estia Development, using eco-friendly materials and smart-home technology.',
-    location: 'Kallithea, Athens', city: 'Athens', country: 'Greece', countryCode: 'GR', currency: 'EUR', region: 'Europe',
-    totalUnits: 34, basePrice: 234000, imageUrl: img('1512917774080-9991f1c4c750'), developerName: 'Estia Development',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '48 - 92 m²',
-    constructionStatus: 'Under Construction', rentalYield: 5.5, aiScore: 86,
-    amenities: ['Smart Home Technology', 'Eco-Friendly Materials', 'Rooftop Deck'], landmarks: [{ name: 'Kallithea Metro', distance: '4 mins' }, { name: 'Athens Riviera', distance: '12 mins' }],
-  },
-  {
-    name: 'Marina City', description: 'A 2,500-unit riverfront residential district on the Danube by Cordia, Hungary\'s leading residential developer and part of the Futureal Group.',
-    location: 'North Bank Danube, Budapest', city: 'Budapest', country: 'Hungary', countryCode: 'HU', currency: 'HUF', region: 'Europe',
-    totalUnits: 90, basePrice: 67500000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'Cordia',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '55 - 105 m²',
-    constructionStatus: 'Under Construction', rentalYield: 5.0, aiScore: 90,
-    amenities: ['Danube Waterfront', 'Landscaped Green Space', 'Car-Free Zone'], landmarks: [{ name: 'Danube Riverbank', distance: '1 min' }, { name: 'Budapest City Center', distance: '15 mins' }],
-  },
-  {
-    name: 'Cairn Homes Dublin Collection', description: 'Residential community by Cairn Homes, Ireland\'s largest homebuilder, focused on the Greater Dublin Area.',
-    location: 'Dublin', city: 'Dublin', country: 'Ireland', countryCode: 'IE', currency: 'EUR', region: 'Europe',
-    totalUnits: 72, basePrice: 522000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Cairn Homes',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['2 BR', '3 BR'], areaRange: '75 - 130 m²',
-    constructionStatus: 'Under Construction', rentalYield: 4.2, aiScore: 88,
-    amenities: ['Modern Design', 'Sustainable Build', 'Community Green Space'], landmarks: [{ name: 'Dublin City Center', distance: '18 mins' }, { name: 'Dublin Airport', distance: '25 mins' }],
-  },
-  {
-    name: 'Skanstes Rezidences', description: 'Residential development in Riga by Invego, developed in cooperation with Reterra.',
-    location: 'Skanstes, Riga', city: 'Riga', country: 'Latvia', countryCode: 'LV', currency: 'EUR', region: 'Europe',
-    totalUnits: 40, basePrice: 189000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Invego',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR'], areaRange: '45 - 90 m²',
-    constructionStatus: 'Under Construction', rentalYield: 4.6, aiScore: 84,
-    amenities: ['Central Location', 'Underground Parking', 'Landscaped Courtyard'], landmarks: [{ name: 'Riga City Center', distance: '8 mins' }, { name: 'Skanstes Business District', distance: '2 mins' }],
-  },
-  {
-    name: 'Vilnius Baltic Residences', description: 'Residential development in Vilnius by Pro Kapital Grupp, active across the Baltic capitals including Tallinn, Riga, and Vilnius.',
-    location: 'Naujamiestis, Vilnius', city: 'Vilnius', country: 'Lithuania', countryCode: 'LT', currency: 'EUR', region: 'Europe',
-    totalUnits: 38, basePrice: 216000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Pro Kapital Grupp',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['1 BR', '2 BR'], areaRange: '48 - 95 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.4, aiScore: 85,
-    amenities: ['City Center Proximity', 'Secure Parking', 'Balconies'], landmarks: [{ name: 'Vilnius Old Town', distance: '10 mins' }, { name: 'Vilnius Center', distance: '5 mins' }],
-  },
-  {
-    name: 'Media Bay Kirchberg', description: 'Four high-end apartment buildings on the Media Bay estate in Kirchberg by Félix Giorgetti, a longstanding Luxembourg builder and developer.',
-    location: 'Kirchberg, Luxembourg City', city: 'Luxembourg City', country: 'Luxembourg', countryCode: 'LU', currency: 'EUR', region: 'Europe',
-    totalUnits: 30, basePrice: 855000, imageUrl: img('1600585154340-be6161a56a0c'), developerName: 'Félix Giorgetti',
-    verified: true, marketTrend: 'Bearish', bhkOptions: ['2 BR', '3 BR'], areaRange: '80 - 140 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 2.9, aiScore: 87,
-    amenities: ['EU Institutions Proximity', 'Underground Parking', 'Concierge'], landmarks: [{ name: 'Kirchberg EU Quarter', distance: '3 mins' }, { name: 'Luxembourg City Center', distance: '10 mins' }],
-  },
-  {
-    name: 'Portomaso Residences', description: 'Waterfront residential and marina development in St. Julian\'s by Tumas Group, one of Malta\'s most established developers.',
-    location: "St. Julian's, near Valletta", city: 'Valletta', country: 'Malta', countryCode: 'MT', currency: 'EUR', region: 'Europe',
-    totalUnits: 48, basePrice: 378000, imageUrl: img('1502672260266-1c1ef2d93688'), developerName: 'Tumas Group',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '55 - 130 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 5.1, aiScore: 91,
-    amenities: ['Marina Views', 'Private Yacht Marina', 'Casino & Hotel Access'], landmarks: [{ name: 'Portomaso Marina', distance: '1 min' }, { name: 'Valletta', distance: '12 mins' }],
-  },
-  {
-    name: 'SkyLight Residence', description: 'A residential development reviving the Obor neighborhood on the site of the former Aversa factory, by InteRo Property Development.',
-    location: 'Obor, Bucharest', city: 'Bucharest', country: 'Romania', countryCode: 'RO', currency: 'RON', region: 'Europe',
-    totalUnits: 80, basePrice: 783000, imageUrl: img('1493809842364-78817add7ffb'), developerName: 'InteRo Property Development',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR', '3 BR'], areaRange: '48 - 105 m²',
-    constructionStatus: 'Under Construction', rentalYield: 5.8, aiScore: 88,
-    amenities: ['Central Location', 'Retail Podium', 'Landscaped Courtyard'], landmarks: [{ name: 'Obor Metro', distance: '4 mins' }, { name: 'Bucharest City Center', distance: '10 mins' }],
-  },
-  {
-    name: 'Sky Park Tower', description: 'A 393-flat residential tower in Bratislava by Alto Real Estate (formerly JTRE), designed as part of the Sky Park development.',
-    location: 'Nové Mesto, Bratislava', city: 'Bratislava', country: 'Slovakia', countryCode: 'SK', currency: 'EUR', region: 'Europe',
-    totalUnits: 66, basePrice: 279000, imageUrl: img('1449844908441-8829872d2607'), developerName: 'Alto Real Estate',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '42 - 88 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 4.7, aiScore: 89,
-    amenities: ['Danube Riverside Park', 'Sky Bar Access', 'Underground Parking'], landmarks: [{ name: 'Bratislava City Center', distance: '6 mins' }, { name: 'Danube River', distance: '4 mins' }],
-  },
-  {
-    name: 'Rezidenca Emonika', description: 'A 187-apartment residential development in central Ljubljana by Mendota Invest.',
-    location: 'City Center, Ljubljana', city: 'Ljubljana', country: 'Slovenia', countryCode: 'SI', currency: 'EUR', region: 'Europe',
-    totalUnits: 44, basePrice: 306000, imageUrl: img('1545324418-cc1a3fa10c00'), developerName: 'Mendota Invest',
-    verified: true, marketTrend: 'Bullish', bhkOptions: ['1 BR', '2 BR'], areaRange: '48 - 92 m²',
-    constructionStatus: 'Under Construction', rentalYield: 4.5, aiScore: 86,
-    amenities: ['Central Station Access', 'Retail Podium', 'Rooftop Terrace'], landmarks: [{ name: 'Ljubljana Center', distance: '5 mins' }, { name: 'Ljubljana Castle', distance: '10 mins' }],
-  },
-  {
-    name: 'Skanska Stockholm Residences', description: 'Residential development in Stockholm by Skanska, one of the leading construction and property developers across the Nordic region.',
-    location: 'Hammarby Sjöstad, Stockholm', city: 'Stockholm', country: 'Sweden', countryCode: 'SE', currency: 'SEK', region: 'Europe',
-    totalUnits: 56, basePrice: 7650000, imageUrl: img('1560448204-e02f11c3d0e2'), developerName: 'Skanska',
-    verified: true, marketTrend: 'Stable', bhkOptions: ['2 BR', '3 BR'], areaRange: '65 - 120 m²',
-    constructionStatus: 'Ready to Move', rentalYield: 3.0, aiScore: 91,
-    amenities: ['Waterfront Promenade', 'Sauna', 'Bike Storage'], landmarks: [{ name: 'Hammarby Sjöstad', distance: '2 mins' }, { name: 'Stockholm Center', distance: '15 mins' }],
-  },
   {
     name: 'DLF The Camellias', description: 'An ultra-luxury residential enclave on Golf Course Road, Gurugram by DLF, India\'s largest listed real estate developer.',
     location: 'Golf Course Road, Gurugram', city: 'Gurugram', country: 'India', countryCode: 'IN', currency: 'INR', region: 'Asia',
@@ -728,9 +307,6 @@ const RAW_SEED_PROJECTS: GlobalSeedProject[] = [
 // A handful of listings double as "for rent" — monthly rent figures (not sale price), spread
 // across currencies so the Rent mode demonstrates the same multi-country coverage as Buy.
 const RENT_MONTHLY_PRICE: Record<string, number> = {
-  "Presqu'île Loft District": 1450, // EUR / month, Lyon
-  'Navigli Atelier': 1800, // EUR / month, Milan
-  'Haussmann Lumière': 2800, // EUR / month, Paris
   "Prestige King's Court": 95000, // INR / month, Bengaluru
 };
 
