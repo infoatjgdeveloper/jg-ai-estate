@@ -236,7 +236,13 @@ interface Investment {
   currency?: string;
   startDate: string;
   endDate: string;
-  status: 'active' | 'completed' | 'defaulted';
+  // 'pending' = a reservation request has been submitted but no agent has
+  // confirmed it and no money has moved yet; it used to be created as
+  // 'active' the instant the button was clicked, which overstated how far
+  // along the deal actually was. 'active' now means an agent has confirmed
+  // the reservation off-platform (there's no in-app confirmation workflow
+  // yet — see the note on confirmBooking).
+  status: 'pending' | 'active' | 'completed' | 'defaulted';
   documents?: {
     name: string;
     type: 'Sale Agreement' | 'Khata' | 'Possession Letter' | 'Tax Receipt';
@@ -1419,9 +1425,10 @@ const InvestmentTracker: React.FC<{ investment: Investment, onRelist: (i: Invest
             </CardDescription>
           </div>
           <Badge className={`px-4 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-widest ${
+            investment.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
             investment.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-stone-100 text-stone-500'
           }`}>
-            {investment.status}
+            {investment.status === 'pending' ? 'Awaiting confirmation' : investment.status}
           </Badge>
         </div>
       </CardHeader>
@@ -1445,9 +1452,13 @@ const InvestmentTracker: React.FC<{ investment: Investment, onRelist: (i: Invest
 
         {investment.documents && (
           <div className="space-y-4 pt-4 border-t border-stone-100">
+            {/* Was labeled "Digital Vault" / "SECURE STORAGE" — there's no
+                actual file storage wired up (no Firebase Storage, no upload
+                UI); this is a status checklist the agent updates, not a
+                document vault. Label it as what it actually is. */}
             <div className="flex items-center justify-between">
-              <p className="micro-label text-stone-400">Digital Vault</p>
-              <Badge variant="outline" className="text-[9px] border-stone-200 text-stone-400 font-bold">SECURE STORAGE</Badge>
+              <p className="micro-label text-stone-400">Paperwork Checklist</p>
+              <Badge variant="outline" className="text-[9px] border-stone-200 text-stone-400 font-bold">STATUS ONLY — NOT STORED HERE</Badge>
             </div>
             <div className="grid grid-cols-1 gap-3">
               {investment.documents.map((doc, idx) => (
@@ -1486,23 +1497,29 @@ const InvestmentTracker: React.FC<{ investment: Investment, onRelist: (i: Invest
           </div>
           <div className="flex gap-3">
             <Button
-              onClick={() => onRelist(investment)}
+              onClick={() => {
+                if (investment.status === 'pending') return;
+                onRelist(investment);
+              }}
+              disabled={investment.status === 'pending'}
+              title={investment.status === 'pending' ? "Available once the agent confirms this reservation" : undefined}
               variant="outline"
-              className="h-10 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-xl font-bold px-5"
+              className="h-10 text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-xl font-bold px-5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Relist <Zap className="w-4 h-4 ml-2" />
             </Button>
             <Button
               onClick={() => {
-                if (investment.status === 'completed') return;
+                if (investment.status === 'completed' || investment.status === 'pending') return;
                 if (window.confirm("Only confirm this if you've already sent this installment to the agent/developer directly. This just logs it here — JGEstate doesn't move the money.")) {
                   onPay(investment);
                 }
               }}
-              disabled={investment.status === 'completed'}
-              className="h-10 text-xs bg-stone-900 text-white hover:bg-brand-600 rounded-xl font-bold px-6"
+              disabled={investment.status === 'completed' || investment.status === 'pending'}
+              title={investment.status === 'pending' ? "Available once the agent confirms this reservation" : undefined}
+              className="h-10 text-xs bg-stone-900 text-white hover:bg-brand-600 rounded-xl font-bold px-6 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {investment.status === 'completed' ? 'Paid' : 'Record Payment'} <ChevronRight className="w-4 h-4 ml-1" />
+              {investment.status === 'completed' ? 'Paid' : investment.status === 'pending' ? 'Awaiting confirmation' : 'Record Payment'} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         </div>
@@ -2359,7 +2376,11 @@ const Dashboard = () => {
         paidAmount: 0,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        status: 'active',
+        // Was 'active' — this fires the instant the button is clicked, before
+        // any agent has confirmed anything or a cent has moved, so 'active'
+        // was overstating the deal. 'pending' matches the dialog copy ("the
+        // seller's agent will follow up to confirm").
+        status: 'pending',
         documents: [
           { name: 'Sale Agreement', type: 'Sale Agreement', status: 'pending' },
           { name: 'Title Deed', type: 'Khata', status: 'pending' },
@@ -4208,18 +4229,25 @@ const Dashboard = () => {
                       </h3>
                       <p className="text-stone-500 leading-relaxed text-sm sm:text-base font-medium">{selectedProject.description}</p>
                       
-                      {/* Premium Amenities Checklist */}
-                      <div className="pt-2">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 block mb-3">Residential Highlights & Key Features</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {(selectedProject.amenities || ["Spa & Hydrotherapy Oasis", "Smart Video Door Locks", "Electric Vehicle Charging Stations", "Vastu Architectural Planning", "Infinity Skydeck Access"]).map((am, idx) => (
-                            <Badge key={idx} variant="outline" className="bg-white border-stone-200 text-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              {am}
-                            </Badge>
-                          ))}
+                      {/* Premium Amenities Checklist — only renders when the listing actually
+                          has real, curator/developer-entered amenities. This used to fall back
+                          to five hardcoded generic entries ("Spa & Hydrotherapy Oasis", etc.)
+                          for every listing missing real data, shown identically to real amenities
+                          with no indication they were placeholders — the same fabricated-looking-
+                          real pattern already fixed for the landmarks section above. */}
+                      {selectedProject.amenities && selectedProject.amenities.length > 0 && (
+                        <div className="pt-2">
+                          <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 block mb-3">Residential Highlights & Key Features</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedProject.amenities.map((am, idx) => (
+                              <Badge key={idx} variant="outline" className="bg-white border-stone-200 text-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                {am}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </section>
 
                     {/* Unit Grid segment with interactive filter */}
@@ -4270,7 +4298,7 @@ const Dashboard = () => {
                         {[
                           {
                             q: "How does reserving a unit work?",
-                            a: "You submit a refundable reservation request with a small deposit to hold the unit while paperwork and financing are arranged. This is not an escrow account — funds move only once a licensed payment processor and your local legal representative confirm the transaction.",
+                            a: "You submit a free reservation request — no payment happens through JGEstate. The seller's agent follows up to confirm the unit is still available and to arrange the actual deposit (typically around 2%) directly with you. JGEstate never collects or holds funds; that deposit, and everything after it, moves only between you, the seller, and your own legal/financial representatives.",
                           },
                           {
                             q: "Is this listing legally verified?",
@@ -4484,9 +4512,15 @@ const Dashboard = () => {
                         <CardTitle className="text-[10px] sm:text-xs font-bold text-brand-600 uppercase tracking-[0.2em]">Reserve This Property</CardTitle>
                       </CardHeader>
                       <CardContent className="p-5 sm:p-6 pt-0 space-y-5 sm:space-y-6">
+                        {/* Was "Refundable Reservation Deposit (2%)" with no qualifier — read
+                            as if JGEstate collects and holds this amount. It doesn't: there's
+                            no payment gateway anywhere in the app, and reserving a unit only
+                            ever creates a pending request (see confirmBooking). Reworded so the
+                            figure is clearly a reference number, not a live transaction. */}
                         <div>
-                          <p className="text-[10px] sm:text-[11px] text-stone-400 uppercase font-bold tracking-widest">Refundable Reservation Deposit (2%)</p>
+                          <p className="text-[10px] sm:text-[11px] text-stone-400 uppercase font-bold tracking-widest">Typical Reservation Deposit (2%)</p>
                           <p className="text-2xl sm:text-3.5xl font-extrabold text-stone-900">{formatPriceFull(Math.round(selectedProject.basePrice * 0.02), selectedProject.currency)}</p>
+                          <p className="text-[10px] sm:text-[11px] text-stone-400 font-medium mt-1">Paid directly to the seller/agent if you proceed — JGEstate doesn't collect or hold funds.</p>
                         </div>
                         <Separator className="bg-stone-200" />
                         <div className="space-y-2.5 sm:space-y-3.5 pt-1">
@@ -4587,7 +4621,7 @@ const Dashboard = () => {
             </div>
           </div>
           <p className="text-[10px] sm:text-[11px] text-stone-400 text-center font-bold uppercase tracking-[0.2em] px-4">
-            RESERVATION REQUEST • {formatPriceFull(selectedUnit?.bookingAmount || 0, selectedUnit?.currency || selectedProject?.currency)} REFUNDABLE DEPOSIT
+            FREE REQUEST • NO PAYMENT NOW • TYPICAL DEPOSIT ~{formatPriceFull(selectedUnit?.bookingAmount || 0, selectedUnit?.currency || selectedProject?.currency)} ARRANGED DIRECTLY WITH THE AGENT
           </p>
         </DialogContent>
       </Dialog>
