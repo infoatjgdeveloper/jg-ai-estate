@@ -4,8 +4,8 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { BrowserRouter, Routes, Route, useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { AuthProvider, useAuth } from './AuthContext';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
@@ -818,6 +818,7 @@ const Navbar = ({
               </NavDropdown>
               <NavDropdown label="Advisor">
                 <DropdownMenuItem onClick={onFindAgentsClick} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">Find an Agent</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { window.location.assign('/studio'); }} className="rounded-lg cursor-pointer py-2.5 px-3 font-bold">Builder Studio (3D tours)</DropdownMenuItem>
                 <DropdownMenuItem onClick={onAdvisorClick} className="rounded-lg cursor-pointer py-2.5 px-3">Email an Agent</DropdownMenuItem>
                 <DropdownMenuItem onClick={onEvaluateClick} className="rounded-lg cursor-pointer py-2.5 px-3">Get a Valuation Estimate</DropdownMenuItem>
               </NavDropdown>
@@ -6014,6 +6015,18 @@ const AuthModal = () => {
   );
 };
 
+const StudioApp = lazy(() => import('./studio/StudioApp'));
+const TourPage = lazy(() => import('./studio/TourPage'));
+const StudioFallback = () => (
+  <div className="flex min-h-screen items-center justify-center text-sm font-semibold text-stone-500">Loading…</div>
+);
+
+const ChatGate = () => {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/tour/')) return null;
+  return <FloatingAIChat />;
+};
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -6024,6 +6037,8 @@ export default function App() {
               {/* Every route renders the same single-page app shell — real, shareable
                   URLs for listings and countries, not separate page bundles (see note
                   above handleSelectProject for what this does and doesn't cover). */}
+              <Route path="/studio/*" element={<Suspense fallback={<StudioFallback />}><StudioApp /></Suspense>} />
+              <Route path="/tour/:id" element={<Suspense fallback={<StudioFallback />}><TourPage /></Suspense>} />
               <Route path="/property/:id" element={<Dashboard />} />
               <Route path="/country/:countryName" element={<Dashboard />} />
               <Route path="/builder/:builderName" element={<Dashboard />} />
@@ -6031,7 +6046,7 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>
-            <FloatingAIChat />
+            <ChatGate />
             <AuthModal />
           </div>
         </BrowserRouter>

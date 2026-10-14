@@ -172,5 +172,29 @@ service cloud.firestore {
                       request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 1000;
       allow update, delete: if isAdmin();
     }
+    // Builder Studio: interactive 3D tours built from brochures. A project is readable by
+    // anyone only once its owner publishes it; everything else is owner-only.
+    match /studioProjects/{projectId} {
+      allow get: if resource.data.published == true || isOwner(resource.data.ownerId);
+      allow list: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwner(resource.data.ownerId);
+    }
+
+    // Enquiries from the public tour page. Anyone can submit, but only against a published
+    // project and with the real owner id; only that owner can read or manage them.
+    match /studioLeads/{leadId} {
+      allow read: if isOwner(resource.data.ownerId);
+      allow create: if request.resource.data.keys().hasAll(['projectId', 'ownerId', 'name', 'phone', 'status', 'createdAt']) &&
+                      request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80 &&
+                      request.resource.data.phone is string && request.resource.data.phone.size() > 4 && request.resource.data.phone.size() <= 30 &&
+                      request.resource.data.status == 'new' &&
+                      (!('message' in request.resource.data) || request.resource.data.message.size() <= 600) &&
+                      get(/databases/$(database)/documents/studioProjects/$(request.resource.data.projectId)).data.published == true &&
+                      get(/databases/$(database)/documents/studioProjects/$(request.resource.data.projectId)).data.ownerId == request.resource.data.ownerId;
+      allow update: if isOwner(resource.data.ownerId);
+      allow delete: if isOwner(resource.data.ownerId);
+    }
   }
 }
