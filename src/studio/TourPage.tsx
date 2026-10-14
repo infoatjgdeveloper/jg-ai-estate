@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext';
 import Plan3DViewer from './Plan3DViewer';
 import StudioMap from './StudioMap';
 import { getProject, submitLead } from './studioApi';
+import { DEMO_ID, DEMO_PROJECT } from './demo';
 import type { FloorPlan, StudioProject } from './types';
 
 type Tab = 'tour' | 'area' | 'details';
@@ -20,7 +21,7 @@ export default function TourPage() {
   useEffect(() => {
     let off = false;
     if (!id) { setState('missing'); return; }
-    getProject(id)
+    (id === DEMO_ID ? Promise.resolve(DEMO_PROJECT) : getProject(id))
       .then((p) => {
         if (off) return;
         if (!p) { setState('missing'); return; }

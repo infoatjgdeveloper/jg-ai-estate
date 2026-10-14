@@ -51,6 +51,7 @@ function SignInGate() {
           Upload a project brochure, get a 3D walkthrough with map and neighborhood, and share one link with your buyers.
         </p>
         <button onClick={() => openAuthModal('signin')} disabled={loading} className={`${btnPrimary} mt-6`}>Sign in to start</button>
+        <a href="/tour/demo" className="mt-3 block text-sm font-bold text-brand-700 hover:underline">See a sample 3D tour first →</a>
       </div>
     </Shell>
   );

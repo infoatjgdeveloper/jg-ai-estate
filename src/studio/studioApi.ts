@@ -51,6 +51,7 @@ export async function uploadPlanImage(ownerId: string, projectId: string, planId
 }
 
 export async function submitLead(project: StudioProject, lead: { name: string; phone: string; email?: string; message?: string; planName?: string }) {
+  if (project.id === 'demo') return; // sample tour: nothing is stored
   await addDoc(collection(db, LEADS), clean({
     projectId: project.id,
     ownerId: project.ownerId,
