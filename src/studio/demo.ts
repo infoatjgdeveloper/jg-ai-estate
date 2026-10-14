@@ -16,6 +16,7 @@ export const DEMO_PROJECT: StudioProject = {
   lng: 72.5714,
   description: 'This is a sample tour so you can see how a builder\'s brochure turns into a shareable 3D walkthrough. Floor plan and details are made up.',
   amenities: ['Clubhouse', 'Swimming pool', 'Gym', 'Kids play area', 'Covered parking', '24x7 security'],
+  highlights: ['5 min to metro station', 'Next to SG Highway', 'Schools within 1 km'],
   contactPhone: '',
   published: true,
   plans: [

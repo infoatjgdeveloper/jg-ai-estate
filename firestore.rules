@@ -176,10 +176,20 @@ service cloud.firestore {
     // anyone only once its owner publishes it; everything else is owner-only.
     match /studioProjects/{projectId} {
       allow get: if resource.data.published == true || isOwner(resource.data.ownerId);
-      allow list: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow list: if resource.data.published == true || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
       allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
       allow update: if isOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
       allow delete: if isOwner(resource.data.ownerId);
+    }
+
+    // Public builder profiles (the directory). Anyone can read published ones; only the
+    // builder (doc id == their uid) can create or edit their own.
+    match /builderProfiles/{builderId} {
+      allow get: if resource.data.published == true || isOwner(builderId);
+      allow list: if resource.data.published == true;
+      allow create, update: if isAuthenticated() && request.auth.uid == builderId && request.resource.data.ownerId == request.auth.uid &&
+                              request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120;
+      allow delete: if isOwner(builderId);
     }
 
     // Enquiries from the public tour page. Anyone can submit, but only against a published

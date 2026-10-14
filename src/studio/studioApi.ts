@@ -1,10 +1,11 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadString } from 'firebase/storage';
 import { auth, db, storage } from '../firebase';
-import type { BrochureParse, PlanParse, StudioLead, StudioProject } from './types';
+import type { BrochureParse, BuilderProfile, PlanParse, StudioLead, StudioProject } from './types';
 
 const PROJECTS = 'studioProjects';
 const LEADS = 'studioLeads';
+const BUILDERS = 'builderProfiles';
 
 /** Firestore rejects `undefined`, so strip it before saving. */
 const clean = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -62,6 +63,8 @@ export async function submitLead(project: StudioProject, lead: { name: string; p
     message: lead.message?.trim().slice(0, 600) || undefined,
     planName: lead.planName?.slice(0, 80) || undefined,
     status: 'new',
+    source: 'jgestate',
+    refCode: 'JGE-' + project.id.slice(0, 4).toUpperCase() + '-' + Date.now().toString(36).slice(-4).toUpperCase(),
     createdAt: serverTimestamp(),
   }));
 }
@@ -212,4 +215,34 @@ export async function fetchNearby(lat: number, lng: number): Promise<NearbyPlace
   });
   cache.set(key, trimmed);
   return trimmed;
+}
+
+
+// ---------- Builder profiles + public directory ----------
+
+export async function getBuilder(id: string): Promise<BuilderProfile | null> {
+  const snap = await getDoc(doc(db, BUILDERS, id));
+  return snap.exists() ? ({ ...(snap.data() as BuilderProfile), id: snap.id }) : null;
+}
+
+export async function saveBuilder(b: BuilderProfile) {
+  const { id, createdAt, updatedAt, ...rest } = b;
+  await setDoc(doc(db, BUILDERS, id), { ...clean(rest), createdAt: createdAt ?? serverTimestamp(), updatedAt: serverTimestamp() });
+}
+
+export async function listBuilders(): Promise<BuilderProfile[]> {
+  const snap = await getDocs(query(collection(db, BUILDERS), where('published', '==', true)));
+  return snap.docs
+    .map((d) => ({ ...(d.data() as BuilderProfile), id: d.id }))
+    .sort((a, b) => millis(b.createdAt) - millis(a.createdAt));
+}
+
+export async function listPublishedProjects(ownerId?: string): Promise<StudioProject[]> {
+  const q = ownerId
+    ? query(collection(db, PROJECTS), where('published', '==', true), where('ownerId', '==', ownerId))
+    : query(collection(db, PROJECTS), where('published', '==', true));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ ...(d.data() as StudioProject), id: d.id }))
+    .sort((a, b) => millis(b.updatedAt) - millis(a.updatedAt));
 }

@@ -6,9 +6,10 @@ import Plan3DViewer from './Plan3DViewer';
 import StudioMap from './StudioMap';
 import { getProject, submitLead } from './studioApi';
 import { DEMO_ID, DEMO_PROJECT } from './demo';
+import { VideoList } from './ui';
 import type { FloorPlan, StudioProject } from './types';
 
-type Tab = 'tour' | 'area' | 'details';
+type Tab = 'tour' | 'area' | 'videos' | 'details';
 
 export default function TourPage() {
   const { id } = useParams();
@@ -67,7 +68,9 @@ export default function TourPage() {
 
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-5 sm:px-6">
-          {project.developerName && <p className="text-[11px] font-extrabold uppercase tracking-widest text-brand-600">{project.developerName}</p>}
+          {project.developerName && (project.ownerId && project.ownerId !== 'demo'
+            ? <Link to={`/builders/${project.ownerId}`} className="w-fit text-[11px] font-extrabold uppercase tracking-widest text-brand-600 hover:underline">{project.developerName} →</Link>
+            : <p className="text-[11px] font-extrabold uppercase tracking-widest text-brand-600">{project.developerName}</p>)}
           <h1 className="font-serif text-2xl font-bold text-stone-900 sm:text-4xl">{project.name}</h1>
           <p className="text-sm font-medium text-stone-500">
             {[project.address, project.city].filter(Boolean).join(', ')}
@@ -78,6 +81,7 @@ export default function TourPage() {
           {([
             ['tour', '3D Tour'],
             ['area', 'Map & Neighborhood'],
+            ...(project.videos?.length ? [['videos', 'Videos']] : []),
             ['details', 'Details'],
           ] as [Tab, string][]).map(([t, label]) => (
             <button
@@ -126,6 +130,8 @@ export default function TourPage() {
             </>
           )}
 
+          {tab === 'videos' && <VideoList videos={project.videos} />}
+
           {tab === 'area' &&
             (hasLocation ? (
               <StudioMap lat={project.lat!} lng={project.lng!} name={project.name} />
@@ -136,6 +142,14 @@ export default function TourPage() {
           {tab === 'details' && (
             <div className="space-y-6">
               {project.description && <p className="text-base font-medium leading-relaxed text-stone-700">{project.description}</p>}
+              {project.highlights && project.highlights.length > 0 && (
+                <section>
+                  <h2 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-stone-400">Highlights</h2>
+                  <ul className="grid gap-2 sm:grid-cols-2">
+                    {project.highlights.map((h, i) => <li key={i} className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-stone-800 ring-1 ring-stone-200">{h}</li>)}
+                  </ul>
+                </section>
+              )}
               {project.amenities.length > 0 && (
                 <section>
                   <h2 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-stone-400">Amenities</h2>
@@ -181,7 +195,7 @@ export default function TourPage() {
               Share on WhatsApp
             </a>
           </div>
-          <p className="text-center text-[11px] font-semibold text-stone-400">Tour made with <Link to="/" className="underline">JGEstate</Link></p>
+          <p className="text-center text-[11px] font-semibold text-stone-400">Enquiries are sent to the builder through <Link to="/" className="underline">JGEstate</Link></p>
         </aside>
       </main>
     </div>

@@ -64,6 +64,10 @@ export interface StudioProject {
   plans: FloorPlan[];
   contactPhone?: string;
   contactEmail?: string;
+  /** Video links (YouTube, Vimeo or direct mp4) */
+  videos?: string[];
+  /** Short selling points shown on the tour page, e.g. "5 min to metro" */
+  highlights?: string[];
   published: boolean;
   createdAt?: any;
   updatedAt?: any;
@@ -80,6 +84,9 @@ export interface StudioLead {
   message?: string;
   planName?: string;
   status?: 'new' | 'contacted' | 'closed';
+  /** Attribution: every enquiry comes through JGEstate */
+  source?: string;
+  refCode?: string;
   createdAt?: any;
 }
 
@@ -106,4 +113,26 @@ export interface PlanParse {
   overallWidthM?: number;
   areaSqft?: number;
   unitType?: string;
+}
+
+/** A builder's public profile. Document id is the builder's auth uid. */
+export interface BuilderProfile {
+  id: string;
+  ownerId: string;
+  name: string;
+  tagline?: string;
+  about?: string;
+  city?: string;
+  country?: string;
+  website?: string;
+  phone?: string;
+  email?: string;
+  reraId?: string;
+  yearsInBusiness?: number;
+  logoUrl?: string;
+  videos?: string[];
+  agreedTermsAt?: any;
+  published: boolean;
+  createdAt?: any;
+  updatedAt?: any;
 }

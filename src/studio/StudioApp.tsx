@@ -10,15 +10,14 @@ import { applyPlanParse, emptyPlan, footprintSqft, uid } from './geometry';
 import { filesToPages, shrinkDataUrl, type PageImage } from './files';
 import { loadPlanImage, localImages } from './imageStore';
 import {
-  createProject, deleteProject, geocode, getProject, leadTime, listMyLeads, listMyProjects,
+  createProject, deleteProject, geocode, getBuilder, getProject, saveBuilder, leadTime, listMyLeads, listMyProjects,
   parseBrochure, parsePlan, saveProject, setLeadStatus, uploadPlanImage,
 } from './studioApi';
-import type { BrochureParse, FloorPlan, StudioLead, StudioProject } from './types';
+import type { BrochureParse, BuilderProfile, FloorPlan, StudioLead, StudioProject } from './types';
+import { serverTimestamp } from 'firebase/firestore';
 
-const input = 'w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-brand-200';
-const label = 'mb-1 block text-[11px] font-extrabold uppercase tracking-wider text-stone-400';
-const btnPrimary = 'rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50';
-const btnGhost = 'rounded-full bg-white px-4 py-2.5 text-sm font-bold text-stone-700 ring-1 ring-stone-200 hover:bg-stone-50 disabled:opacity-50';
+import { btnGhost, btnPrimary, input, label } from './ui';
+import { splitLines } from './media';
 
 function Shell({ children, title, back }: { children: React.ReactNode; title?: string; back?: { to: string; label: string } }) {
   const { user, profile } = useAuth();
@@ -59,24 +58,120 @@ function SignInGate() {
 
 export default function StudioApp() {
   const { user, isAuthReady } = useAuth();
+  const [builder, setBuilder] = useState<BuilderProfile | null | undefined>(undefined);
+  const [loadErr, setLoadErr] = useState('');
+
+  useEffect(() => {
+    if (!user) { setBuilder(undefined); return; }
+    getBuilder(user.uid).then(setBuilder).catch((e) => {
+      console.error(e);
+      setLoadErr('Could not load your builder profile. The Firestore rules may not be deployed yet.');
+      setBuilder(null);
+    });
+  }, [user]);
+
   if (!isAuthReady) return <div className="flex min-h-screen items-center justify-center bg-stone-50 text-sm font-semibold text-stone-500">Loading…</div>;
   if (!user) return <SignInGate />;
+  if (builder === undefined) return <div className="flex min-h-screen items-center justify-center bg-stone-50 text-sm font-semibold text-stone-500">Loading…</div>;
+  if (builder === null) return <Shell><Onboarding error={loadErr} onSaved={setBuilder} /></Shell>;
   return (
     <Routes>
-      <Route index element={<ProjectList />} />
-      <Route path="new" element={<NewProject />} />
+      <Route index element={<ProjectList builder={builder} onBuilder={setBuilder} />} />
+      <Route path="new" element={<NewProject builder={builder} />} />
       <Route path=":id" element={<Workspace />} />
     </Routes>
   );
 }
 
+// ------------------------------------------------------------------ Builder profile (onboarding + edit)
+
+const TERMS =
+  'I agree that enquiries I receive through JGEstate are referred by JGEstate, and that a referral commission applies to any sale that results from them, as set out in my written agreement with JGEstate.';
+
+function BuilderForm({ initial, onSaved, onboarding }: { initial: BuilderProfile; onSaved: (b: BuilderProfile) => void; onboarding?: boolean }) {
+  const [f, setF] = useState(initial);
+  const [videos, setVideos] = useState((initial.videos || []).join('\n'));
+  const [agree, setAgree] = useState(!onboarding);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [ok, setOk] = useState(false);
+  const set = (k: keyof BuilderProfile, v: any) => { setF((p) => ({ ...p, [k]: v })); setOk(false); };
+
+  const save = async () => {
+    if (!f.name.trim()) { setErr('Please enter your company name.'); return; }
+    if (!agree) { setErr('Please accept the referral terms to continue.'); return; }
+    setBusy(true); setErr('');
+    const next: BuilderProfile = {
+      ...f, name: f.name.trim(), published: true,
+      videos: splitLines(videos).slice(0, 8),
+      agreedTermsAt: f.agreedTermsAt ?? serverTimestamp(),
+    };
+    try {
+      await saveBuilder(next);
+      onSaved(next); setOk(true);
+    } catch (e) {
+      console.error(e);
+      setErr('Could not save. If this keeps happening, the Firestore rules may not be deployed yet.');
+    }
+    setBusy(false);
+  };
+
+  const num = (v: string) => { const n = parseInt(v, 10); return isFinite(n) ? n : undefined; };
+  return (
+    <div className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-stone-200 sm:p-7">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2"><span className={label}>Company name *</span><input className={input} value={f.name} onChange={(e) => set('name', e.target.value)} maxLength={120} /></div>
+        <div className="sm:col-span-2"><span className={label}>One-line tagline</span><input className={input} value={f.tagline || ''} onChange={(e) => set('tagline', e.target.value)} maxLength={140} placeholder="e.g. Quality homes in West Ahmedabad since 1998" /></div>
+        <div><span className={label}>City</span><input className={input} value={f.city || ''} onChange={(e) => set('city', e.target.value)} /></div>
+        <div><span className={label}>Country</span><input className={input} value={f.country || ''} onChange={(e) => set('country', e.target.value)} /></div>
+        <div><span className={label}>Phone</span><input className={input} value={f.phone || ''} onChange={(e) => set('phone', e.target.value)} inputMode="tel" /></div>
+        <div><span className={label}>Email</span><input className={input} value={f.email || ''} onChange={(e) => set('email', e.target.value)} inputMode="email" /></div>
+        <div><span className={label}>Website</span><input className={input} value={f.website || ''} onChange={(e) => set('website', e.target.value)} /></div>
+        <div><span className={label}>Years in business</span><input className={input} value={f.yearsInBusiness ?? ''} onChange={(e) => set('yearsInBusiness', num(e.target.value))} inputMode="numeric" /></div>
+        <div><span className={label}>RERA / registration ID (optional)</span><input className={input} value={f.reraId || ''} onChange={(e) => set('reraId', e.target.value)} /></div>
+        <div><span className={label}>Logo image link (optional)</span><input className={input} value={f.logoUrl || ''} onChange={(e) => set('logoUrl', e.target.value)} placeholder="https://…" /></div>
+        <div className="sm:col-span-2"><span className={label}>About your company</span><textarea className={`${input} min-h-[110px]`} value={f.about || ''} onChange={(e) => set('about', e.target.value)} maxLength={2000} /></div>
+        <div className="sm:col-span-2"><span className={label}>Company videos (one link per line: YouTube, Vimeo or .mp4)</span><textarea className={`${input} min-h-[80px]`} value={videos} onChange={(e) => { setVideos(e.target.value); setOk(false); }} placeholder="https://www.youtube.com/watch?v=…" /></div>
+      </div>
+      {onboarding && (
+        <label className="flex gap-3 rounded-xl bg-stone-50 p-3.5 text-xs font-medium leading-relaxed text-stone-600">
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600" />
+          <span>{TERMS}</span>
+        </label>
+      )}
+      {err && <p className="text-xs font-bold text-brand-700">{err}</p>}
+      <div className="flex items-center gap-3">
+        <button onClick={save} disabled={busy} className={btnPrimary}>{busy ? 'Saving…' : onboarding ? 'Create my profile' : 'Save profile'}</button>
+        {ok && <span className="text-xs font-bold text-emerald-700">Saved</span>}
+        {!onboarding && <Link to={`/builders/${f.id}`} className="ml-auto text-xs font-bold text-stone-500 underline">View public profile</Link>}
+      </div>
+    </div>
+  );
+}
+
+function Onboarding({ onSaved, error }: { onSaved: (b: BuilderProfile) => void; error?: string }) {
+  const { user, profile } = useAuth();
+  if (!user) return null;
+  const initial: BuilderProfile = {
+    id: user.uid, ownerId: user.uid, name: '', email: user.email || '', published: true,
+  };
+  return (
+    <div className="mx-auto max-w-3xl">
+      <h1 className="font-serif text-3xl font-bold text-stone-900">Set up your builder profile</h1>
+      <p className="mb-5 mt-2 text-sm font-medium text-stone-600">Hi {profile?.displayName || 'there'}, tell buyers who you are. This becomes your public page on JGEstate, where your projects, videos and 3D tours live.</p>
+      {error && <p className="mb-4 rounded-xl bg-amber-50 p-3 text-xs font-semibold text-amber-800">{error}</p>}
+      <BuilderForm initial={initial} onSaved={onSaved} onboarding />
+    </div>
+  );
+}
+
 // ------------------------------------------------------------------ Project list + leads
 
-function ProjectList() {
+function ProjectList({ builder, onBuilder }: { builder: BuilderProfile; onBuilder: (b: BuilderProfile) => void }) {
   const { user } = useAuth();
   const [projects, setProjects] = useState<StudioProject[] | null>(null);
   const [leads, setLeads] = useState<StudioLead[]>([]);
-  const [tab, setTab] = useState<'projects' | 'leads'>('projects');
+  const [tab, setTab] = useState<'projects' | 'leads' | 'profile'>('projects');
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -104,17 +199,19 @@ function ProjectList() {
   return (
     <Shell>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="font-serif text-3xl font-bold text-stone-900">Your projects</h1>
+        <h1 className="font-serif text-3xl font-bold text-stone-900">{builder.name}</h1>
         <Link to="/studio/new" className={`${btnPrimary} ml-auto`}>New project from brochure</Link>
       </div>
       <div className="mb-5 flex gap-1 border-b border-stone-200">
-        {(['projects', 'leads'] as const).map((t) => (
+        {(['projects', 'leads', 'profile'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`border-b-2 px-4 py-2.5 text-sm font-bold capitalize ${tab === t ? 'border-brand-600 text-brand-700' : 'border-transparent text-stone-500'}`}>
             {t}{t === 'leads' && newLeads ? <span className="ml-1.5 rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] text-white">{newLeads}</span> : null}
           </button>
         ))}
       </div>
       {error && <p className="mb-4 rounded-xl bg-amber-50 p-3 text-xs font-semibold text-amber-800">{error}</p>}
+
+      {tab === 'profile' && <BuilderForm initial={builder} onSaved={onBuilder} />}
 
       {tab === 'projects' && (
         projects === null ? <p className="text-sm font-semibold text-stone-500">Loading…</p> :
@@ -156,7 +253,7 @@ function ProjectList() {
                     <a href={`tel:${l.phone}`} className="underline">{l.phone}</a>{l.email ? <> · <a href={`mailto:${l.email}`} className="underline">{l.email}</a></> : null}
                   </p>
                   {l.message && <p className="mt-1 text-xs font-medium text-stone-500">{l.message}</p>}
-                  <p className="mt-1 text-[11px] font-medium text-stone-400">{leadTime(l)}</p>
+                  <p className="mt-1 text-[11px] font-medium text-stone-400">{leadTime(l)}{l.refCode ? ` · Ref ${l.refCode} · via JGEstate` : ' · via JGEstate'}</p>
                 </div>
                 <select
                   value={l.status || 'new'}
@@ -203,7 +300,7 @@ function DetailsFields({ value, onChange }: { value: DetailsForm; onChange: (v: 
 
 const splitAmenities = (s: string) => s.split(/[,\n]/).map((a) => a.trim()).filter(Boolean).slice(0, 40);
 
-function NewProject() {
+function NewProject({ builder }: { builder: BuilderProfile }) {
   const { user, profile } = useAuth();
   const nav = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -213,7 +310,7 @@ function NewProject() {
   const [reading, setReading] = useState<string>('');
   const [aiBusy, setAiBusy] = useState(false);
   const [aiNote, setAiNote] = useState('');
-  const [details, setDetails] = useState<DetailsForm>(emptyDetails);
+  const [details, setDetails] = useState<DetailsForm>({ ...emptyDetails, developerName: builder.name, city: builder.city || '', reraId: builder.reraId || '', contactPhone: builder.phone || '', contactEmail: builder.email || '' });
   const [aiUnits, setAiUnits] = useState<BrochureParse['units']>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -608,7 +705,20 @@ function DetailsTab({ project, update }: { project: StudioProject; update: (fn: 
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <div className="rounded-3xl bg-white p-5 ring-1 ring-stone-200 sm:p-7"><DetailsFields value={form} onChange={onChange} /></div>
+      <div className="space-y-6">
+        <div className="rounded-3xl bg-white p-5 ring-1 ring-stone-200 sm:p-7"><DetailsFields value={form} onChange={onChange} /></div>
+        <div className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-stone-200 sm:p-7">
+          <h2 className="text-sm font-extrabold text-stone-900">Videos and highlights</h2>
+          <div>
+            <span className={label}>Project videos (one link per line: YouTube, Vimeo or .mp4)</span>
+            <textarea className={`${input} min-h-[80px]`} defaultValue={(project.videos || []).join('\n')} onChange={(e) => { const v = splitLines(e.target.value).slice(0, 8); update((p) => ({ ...p, videos: v })); }} placeholder="https://www.youtube.com/watch?v=…" />
+          </div>
+          <div>
+            <span className={label}>Highlights (one per line, e.g. "5 min to metro")</span>
+            <textarea className={`${input} min-h-[80px]`} defaultValue={(project.highlights || []).join('\n')} onChange={(e) => { const v = splitLines(e.target.value).map((x) => x.slice(0, 80)).slice(0, 12); update((p) => ({ ...p, highlights: v })); }} />
+          </div>
+        </div>
+      </div>
       <div className="space-y-4 rounded-3xl bg-white p-5 ring-1 ring-stone-200 sm:p-7">
         <h2 className="text-sm font-extrabold text-stone-900">Map location</h2>
         <div className="flex flex-wrap gap-2">

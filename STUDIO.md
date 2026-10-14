@@ -18,3 +18,10 @@ AI output is a draft; scale must be confirmed; 3D is labelled approximate; nearb
 
 ## Limits
 AI: 30 requests/hour/user, max 8 images. Geocoding/nearby use free OSM services (Nominatim, Overpass) — fine for low volume.
+
+## Builder showcase model (current)
+- `/` is the public directory; `/builders/:id` is a builder's public page; `/tour/:id` is a project tour; `/studio` is the builder dashboard (profile, projects, enquiries).
+- Builders accept referral terms at signup (text lives in `TERMS` in `src/studio/StudioApp.tsx` — have a lawyer finalise it and sign a written agreement per builder).
+- Every enquiry is stored with `source: 'jgestate'` and a `refCode` for commission tracking.
+- The old buy/sell/rent marketplace is hidden, not deleted: set `LEGACY_MARKETPLACE = true` in `src/App.tsx` to bring it back.
+- **Redeploy `firestore.rules`** — it now includes `builderProfiles` and public listing of published projects.

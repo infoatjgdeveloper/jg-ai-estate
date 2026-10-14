@@ -5,7 +5,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { AuthProvider, useAuth } from './AuthContext';
 import { auth, googleProvider, db, handleFirestoreError, OperationType } from './firebase';
@@ -6017,13 +6017,21 @@ const AuthModal = () => {
 
 const StudioApp = lazy(() => import('./studio/StudioApp'));
 const TourPage = lazy(() => import('./studio/TourPage'));
+const Directory = lazy(() => import('./studio/Directory'));
+const BuilderPage = lazy(() => import('./studio/BuilderPage'));
+
+/**
+ * JGEstate is now a builder showcase (profiles, projects, 3D tours, enquiries). The earlier
+ * buy/sell/rent marketplace is kept in the codebase but hidden. Flip this to true to bring it back.
+ */
+const LEGACY_MARKETPLACE = false;
 const StudioFallback = () => (
   <div className="flex min-h-screen items-center justify-center text-sm font-semibold text-stone-500">Loading…</div>
 );
 
 const ChatGate = () => {
   const { pathname } = useLocation();
-  if (pathname.startsWith('/tour/')) return null;
+  if (!LEGACY_MARKETPLACE || pathname.startsWith('/tour/')) return null;
   return <FloatingAIChat />;
 };
 
@@ -6039,12 +6047,22 @@ export default function App() {
                   above handleSelectProject for what this does and doesn't cover). */}
               <Route path="/studio/*" element={<Suspense fallback={<StudioFallback />}><StudioApp /></Suspense>} />
               <Route path="/tour/:id" element={<Suspense fallback={<StudioFallback />}><TourPage /></Suspense>} />
-              <Route path="/property/:id" element={<Dashboard />} />
-              <Route path="/country/:countryName" element={<Dashboard />} />
-              <Route path="/builder/:builderName" element={<Dashboard />} />
-              <Route path="/agent/:agentId" element={<Dashboard />} />
-              <Route path="/" element={<Dashboard />} />
-              <Route path="*" element={<Dashboard />} />
+              <Route path="/builders/:id" element={<Suspense fallback={<StudioFallback />}><BuilderPage /></Suspense>} />
+              {LEGACY_MARKETPLACE ? (
+                <>
+                  <Route path="/property/:id" element={<Dashboard />} />
+                  <Route path="/country/:countryName" element={<Dashboard />} />
+                  <Route path="/builder/:builderName" element={<Dashboard />} />
+                  <Route path="/agent/:agentId" element={<Dashboard />} />
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="*" element={<Dashboard />} />
+                </>
+              ) : (
+                <>
+                  <Route path="/" element={<Suspense fallback={<StudioFallback />}><Directory /></Suspense>} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </>
+              )}
             </Routes>
             <ChatGate />
             <AuthModal />
