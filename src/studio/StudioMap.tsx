@@ -35,11 +35,11 @@ export default function StudioMap({ lat, lng, name, className }: Props) {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(map);
     const pin = L.divIcon({
       className: '',
-      html: `<div style="transform:translate(-50%,-100%);background:#AF1D2E;color:#fff;padding:6px 12px;border-radius:999px;font:700 12px Manrope,system-ui,sans-serif;white-space:nowrap;box-shadow:0 6px 16px rgba(175,29,46,.4)">${escapeHtml(name).slice(0, 40)}</div>`,
+      html: `<div style="transform:translate(-50%,-100%);background:#1F3A7A;color:#fff;padding:6px 12px;border-radius:999px;font:700 12px Manrope,system-ui,sans-serif;white-space:nowrap;box-shadow:0 6px 16px rgba(31,58,122,.4)">${escapeHtml(name).slice(0, 40)}</div>`,
       iconSize: [0, 0],
     });
     L.marker([lat, lng], { icon: pin, zIndexOffset: 1000 }).addTo(map);
-    L.circle([lat, lng], { radius: 1000, color: '#AF1D2E', weight: 1, fillOpacity: 0.04, dashArray: '4 6' }).addTo(map);
+    L.circle([lat, lng], { radius: 1000, color: '#1F3A7A', weight: 1, fillOpacity: 0.04, dashArray: '4 6' }).addTo(map);
     layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
     return () => {

@@ -1,6 +1,5 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
-import { auth, db, storage } from '../firebase';
+import { auth, db } from '../firebase';
 import type { BrochureParse, BuilderProfile, PlanParse, StudioLead, StudioProject } from './types';
 
 const PROJECTS = 'studioProjects';
@@ -37,18 +36,6 @@ export async function saveProject(p: StudioProject) {
 
 export async function deleteProject(id: string) {
   await deleteDoc(doc(db, PROJECTS, id));
-}
-
-/** Best-effort: the tracing image is a convenience, the project still works without it. */
-export async function uploadPlanImage(ownerId: string, projectId: string, planId: string, dataUrl: string): Promise<string | undefined> {
-  try {
-    const r = ref(storage, `studio/${ownerId}/${projectId}/${planId}.jpg`);
-    await uploadString(r, dataUrl, 'data_url');
-    return await getDownloadURL(r);
-  } catch (e) {
-    console.warn('Plan image upload skipped:', e);
-    return undefined;
-  }
 }
 
 export async function submitLead(project: StudioProject, lead: { name: string; phone: string; email?: string; message?: string; planName?: string }) {

@@ -1,153 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-/* Color theme: rich crimson red + warm gold accent, replacing the earlier royal
-   blue theme. Editorial serif/sans pairing (Fraunces/Manrope) unchanged. Every
-   brand-* / stone-* utility used across the app inherits from these tokens, so
-   this one file recolors the entire site without touching component markup. */
+/* JGEstate — "Midnight & Gold". brand-* is the deep navy used for actions on light pages;
+   gold-* is the accent used on the dark, animated hero and 3D stages. */
 @theme {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Fraunces", ui-serif, Georgia, serif;
-  --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
 
-  --color-brand-primary: #AF1D2E;
-  --color-brand-secondary: #69111B;
-  --color-brand-accent: #C9A15A;
-  --color-paper: #FFFCF7;
-  --color-ink: #16211C;
+  --color-ink: #070B1A;
+  --color-night: #0B1228;
+  --color-dusk: #1B2450;
 
-  /* Rich crimson red + warm gold accent scale */
-  --color-brand-50: #FCEDEF;
-  --color-brand-100: #F8D3D7;
-  --color-brand-150: #F4BDC4;
-  --color-brand-200: #EF9FA8;
-  --color-brand-300: #E66574;
-  --color-brand-400: #DF3A4D;
-  --color-brand-500: #CA2135;
-  --color-brand-600: #AF1D2E;
-  --color-brand-650: #9A1928;
-  --color-brand-700: #841522;
-  --color-brand-800: #69111B;
-  --color-brand-900: #4B0C13;
-  --color-brand-950: #30080D;
+  --color-brand-50: #EEF2FB;
+  --color-brand-100: #DCE4F6;
+  --color-brand-200: #B9C8EC;
+  --color-brand-300: #8FA4DB;
+  --color-brand-400: #5F7BC4;
+  --color-brand-500: #3D5AA8;
+  --color-brand-600: #1F3A7A;
+  --color-brand-700: #172C5E;
+  --color-brand-800: #101F45;
+  --color-brand-900: #0B1530;
+  --color-brand-950: #070D20;
 
-  /* Warm stone scale — replaces the old cool slate/blue-gray neutrals */
-  --color-stone-50: #FAF9F6;
-  --color-stone-100: #F3F1EB;
-  --color-stone-150: #EBE7DE;
-  --color-stone-200: #E1DBCE;
-  --color-stone-300: #CBC2AC;
-  --color-stone-400: #A79C82;
-  --color-stone-500: #7D7360;
-  --color-stone-600: #5B5346;
-  --color-stone-700: #423C33;
-  --color-stone-800: #2B2721;
-  --color-stone-900: #1A1714;
-  --color-stone-950: #0F0D0B;
+  --color-gold-300: #F6D58B;
+  --color-gold-400: #EFBF5A;
+  --color-gold-500: #E4A82F;
+  --color-gold-600: #C68A17;
+
+  --color-stone-50: #F7F7F4;
+  --color-stone-100: #EFEFEA;
+  --color-stone-200: #E2E2DA;
+  --color-stone-300: #C9C9BE;
+  --color-stone-400: #9A9A8E;
+  --color-stone-500: #6F6F65;
+  --color-stone-600: #55554D;
+  --color-stone-700: #3C3C37;
+  --color-stone-800: #26261F;
+  --color-stone-900: #15150F;
 }
 
-@theme inline {
-    --color-border: var(--border);
-    --color-input: var(--input);
-    --color-ring: var(--ring);
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --color-primary: var(--primary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-secondary: var(--secondary);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #F7F7F4; color: #15150F; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+::selection { background: #EFBF5A; color: #070B1A; }
+
+@keyframes drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes twinkle { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+.rise { animation: rise .8s cubic-bezier(.2,.7,.2,1) both; }
+.glass { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.glass-light { background: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.gold-text { background: linear-gradient(100deg, #F6D58B 0%, #EFBF5A 40%, #fff1c7 55%, #EFBF5A 70%, #E4A82F 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 7s linear infinite; }
+.btn-gold { background: linear-gradient(135deg, #F6D58B, #E4A82F); color: #070B1A; box-shadow: 0 10px 30px -8px rgba(228,168,47,.55); transition: transform .2s, box-shadow .2s; }
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 16px 36px -8px rgba(228,168,47,.7); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-:root {
-    --background: #FAF9F6;
-    --foreground: #1A1714;
-    --card: #FFFCF7;
-    --card-foreground: #1A1714;
-    --popover: #FFFCF7;
-    --popover-foreground: #1A1714;
-    --primary: #1D46B0;
-    --primary-foreground: #FFFFFF;
-    --secondary: #F3F1EB;
-    --secondary-foreground: #1A1714;
-    --muted: #F3F1EB;
-    --muted-foreground: #7D7360;
-    --accent: #F3F1EB;
-    --accent-foreground: #1A1714;
-    --destructive: #B3311F;
-    --destructive-foreground: #FFFFFF;
-    --border: #E1DBCE;
-    --input: #E1DBCE;
-    /* Was a leftover blue (#1D46B0) from an earlier template — clashed with this app's red
-       brand palette (--color-brand-600: #AF1D2E) everywhere a focus ring showed up. */
-    --ring: #AF1D2E;
-    --radius: 0.75rem;
-}
-
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.animate-marquee {
-  animation: marquee 40s linear infinite;
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground antialiased selection:bg-brand-100 selection:text-brand-900;
-  }
-}
-
-@layer components {
-  .glass-panel {
-    @apply bg-white/80 backdrop-blur-md border border-stone-200 shadow-sm;
-  }
-
-  .neon-glow {
-    @apply shadow-[0_0_20px_rgba(29,70,176,0.18)];
-  }
-
-  .tech-grid {
-    background-image: radial-gradient(circle at 1px 1px, #E2E8F0 1px, transparent 0);
-    background-size: 32px 32px;
-  }
-
-  .luxury-heading {
-    @apply font-serif font-semibold tracking-tight;
-  }
-
-  .micro-label {
-    @apply font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-stone-500;
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.mask-fade-bottom {
-  mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
-}
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
